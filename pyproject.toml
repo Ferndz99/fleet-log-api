@@ -23,3 +23,10 @@ dependencies = [
     "pytest-django>=4.12.0",
     "whitenoise>=6.12.0",
 ]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py", "*_tests.py"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
