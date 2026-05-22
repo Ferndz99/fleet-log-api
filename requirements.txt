@@ -39,6 +39,7 @@ django==6.0.4
     #   djangorestframework
     #   djangorestframework-simplejwt
     #   djoser
+    #   drf-nested-routers
     #   drf-spectacular
     #   social-auth-app-django
 django-cors-headers==4.9.0
@@ -56,12 +57,15 @@ djangorestframework==3.17.1
     #   fleet-log-api (pyproject.toml)
     #   djangorestframework-simplejwt
     #   djoser
+    #   drf-nested-routers
     #   drf-spectacular
 djangorestframework-simplejwt==5.5.1
     # via
     #   fleet-log-api (pyproject.toml)
     #   djoser
 djoser==2.3.3
+    # via fleet-log-api (pyproject.toml)
+drf-nested-routers==0.95.0
     # via fleet-log-api (pyproject.toml)
 drf-spectacular==0.29.0
     # via fleet-log-api (pyproject.toml)
