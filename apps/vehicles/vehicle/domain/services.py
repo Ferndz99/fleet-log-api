@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import UploadedFile
 from django.db import IntegrityError, transaction
 
+from apps.vehicles.choices import VehicleLogStatus, VehicleLogType
 from apps.vehicles.vehicle.domain.exceptions import (
     InvalidMediaType,
     MediaNotFound,
@@ -109,6 +110,8 @@ class VehicleLogService:
         *,
         title: str,
         detail: str,
+        type: VehicleLogType,
+        status: VehicleLogStatus,
         created_by: User | None = None,
         files: list[UploadedFile] | None = None,
     ) -> VehicleLog:
@@ -120,6 +123,8 @@ class VehicleLogService:
                 created_by=created_by,
                 title=title.strip(),
                 detail=detail.strip(),
+                type=type,
+                status=status,
             )
 
             if files:
@@ -127,6 +132,7 @@ class VehicleLogService:
 
         return log
 
+    # CONSIDERAR QUE TAN VALIDO ES MANTENER LA FUNCION DE ACTUALIZACION DE UN LOG. LOG INMUTABLE(?)
     @staticmethod
     def update(
         vehicle_id: int,

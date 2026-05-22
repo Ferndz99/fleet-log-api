@@ -3,6 +3,7 @@ from __future__ import annotations
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+from apps.vehicles.choices import VehicleLogStatus, VehicleLogType
 from apps.vehicles.vehicle.domain.models import Media, Vehicle, VehicleLog
 
 User = get_user_model()
@@ -86,6 +87,8 @@ class VehicleLogWriteSerializer(serializers.Serializer):
         required=False,
         allow_empty=True,
     )
+    type = serializers.ChoiceField(choices=VehicleLogType.choices)
+    status = serializers.ChoiceField(choices=VehicleLogStatus.choices)
 
     def validate_files(self, values):
         allowed = {"jpg", "jpeg", "png", "webp", "mp4", "mov", "avi"}
@@ -128,6 +131,8 @@ class VehicleLogDetailSerializer(serializers.ModelSerializer):
             "created_by",
             "created_at",
             "media_files",
+            "type",
+            "status",
         )
         read_only_fields = fields
 
@@ -143,7 +148,7 @@ class VehicleLogListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = VehicleLog
-        fields = ("id", "title", "created_by", "created_at", "media_count")
+        fields = ("id", "title", "created_by", "created_at", "media_count", "type", "status")
         read_only_fields = fields
 
 

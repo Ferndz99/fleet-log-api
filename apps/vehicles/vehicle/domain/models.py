@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from apps.vehicles.choices import VehicleLogStatus, VehicleLogType
+
 User = get_user_model()
 
 
@@ -45,13 +47,25 @@ class VehicleLog(models.Model):
     title = models.CharField(_("title"), max_length=255)
     detail = models.TextField(_("detail"))
     created_at = models.DateTimeField(_("created at"), auto_now_add=True)
+    type = models.CharField(
+        max_length=30,
+        choices=VehicleLogType.choices,
+        default=VehicleLogType.OBSERVATION,
+    )
+    status = models.CharField(
+        max_length=30,
+        choices=VehicleLogStatus.choices,
+        default=VehicleLogStatus.PENDING,
+    )
 
     class Meta:
         verbose_name = _("vehicle log")
         verbose_name_plural = _("vehicle logs")
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["vehicle", "-created_at"], name="vehiclelog_vehicle_date_idx"),
+            models.Index(
+                fields=["vehicle", "-created_at"], name="vehiclelog_vehicle_date_idx"
+            ),
         ]
 
     def __str__(self) -> str:
