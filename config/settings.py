@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     "django_filters",
     # local apps
     "apps.accounts",
+    "apps.vehicles",
 ]
 
 MIDDLEWARE = [

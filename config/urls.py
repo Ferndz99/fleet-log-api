@@ -23,6 +23,7 @@ urlpatterns = [
         name="redoc",
     ),
     path("api/v1/", include("apps.accounts.urls")),
+    path("api/v1/", include("apps.vehicles.urls")),
 ]
 
 
