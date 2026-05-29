@@ -11,6 +11,8 @@ ROUTE AND ENVIRONMENT CONFIGURATION
 """
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+FRONTEND_URL = "http://localhost:5173"
+
 
 """
 --------------------
@@ -72,6 +74,7 @@ INSTALLED_APPS = [
     # local apps
     "apps.accounts",
     "apps.vehicles",
+    "apps.memberships",
 ]
 
 MIDDLEWARE = [
