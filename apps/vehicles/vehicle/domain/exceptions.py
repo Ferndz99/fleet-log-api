@@ -20,6 +20,13 @@ class VehiclePatentAlreadyExists(DomainError):
     code = "vehicle_patent_already_exists"
 
 
+class VehiclePatentNotFound(DomainError):
+    status_code = 404
+    title = "Patent not found"
+    default_detail = "No vehicle found with patent: {patent}"
+    code = "vehicle_patent_not_found"
+
+
 # ---------------------------------------------------------------------------
 # VehicleLog
 # ---------------------------------------------------------------------------

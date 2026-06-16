@@ -127,7 +127,7 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/hour" if DEBUG else "50/hour",
+        "anon": "10000/hour" if DEBUG else "50/hour",
         "user": "1000/hour" if DEBUG else "500/hour",
     },
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
@@ -213,7 +213,8 @@ DJOSER = {
         "user_create_password_retype": "djoser.serializers.UserCreatePasswordRetypeSerializer",
         "user_delete": "djoser.serializers.UserDeleteSerializer",
         "user": "djoser.serializers.UserSerializer",
-        "current_user": "djoser.serializers.UserSerializer",
+        # "current_user": "djoser.serializers.UserSerializer",
+        "current_user": "apps.accounts.user.api.serializers.CustomUserSerializer",
         "token": "djoser.serializers.TokenSerializer",
         "token_create": "djoser.serializers.TokenCreateSerializer",
         "provider_auth": "djoser.social.serializers.ProviderAuthSerializer",
@@ -364,7 +365,7 @@ LOGGING = {
         "django.server": {
             "handlers": ["console", "file"],
             "level": "WARNING",
-            "propagate": False,
+            "propagate": True,
         },
         "django": {
             "handlers": ["console", "file"],
@@ -379,7 +380,7 @@ LOGGING = {
         "django.request": {
             "handlers": ["console"],
             "level": "ERROR",
-            "propagate": False,
+            "propagate": True,
         },
         "django.template": {
             "handlers": ["console"],

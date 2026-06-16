@@ -148,7 +148,15 @@ class VehicleLogListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = VehicleLog
-        fields = ("id", "title", "created_by", "created_at", "media_count", "type", "status")
+        fields = (
+            "id",
+            "title",
+            "created_by",
+            "created_at",
+            "media_count",
+            "type",
+            "status",
+        )
         read_only_fields = fields
 
 
@@ -202,9 +210,13 @@ class VehicleDetailSerializer(serializers.ModelSerializer):
 class VehicleListSerializer(serializers.ModelSerializer):
     """Compact representation for vehicle list — no nested logs."""
 
-    log_count = serializers.IntegerField(source="logs.count", read_only=True)
+    log_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Vehicle
         fields = ("id", "patent", "brand", "model", "year", "created_at", "log_count")
         read_only_fields = fields
+
+
+class VehicleLogStatusSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=VehicleLogStatus.choices)
