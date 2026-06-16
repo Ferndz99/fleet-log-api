@@ -12,6 +12,7 @@ from apps.vehicles.vehicle.domain.exceptions import (
     VehicleLogNotFound,
     VehicleNotFound,
     VehiclePatentAlreadyExists,
+    VehiclePatentNotFound,
 )
 from .models import Media, Vehicle, VehicleLog
 
@@ -80,6 +81,13 @@ class VehicleService:
     def delete(vehicle_id: int) -> None:
         vehicle = VehicleService.get_by_id(vehicle_id)
         vehicle.delete()
+
+    @staticmethod
+    def get_by_patent(patent: str) -> Vehicle:
+        try:
+            return Vehicle.objects.get(patent__iexact=patent)
+        except Vehicle.DoesNotExist:
+            raise VehiclePatentNotFound(patent=patent)
 
 
 class VehicleLogService:
@@ -155,6 +163,18 @@ class VehicleLogService:
     def delete(vehicle_id: int, log_id: int) -> None:
         log = VehicleLogService.get_by_id(vehicle_id, log_id)
         log.delete()
+
+    @staticmethod
+    def update_status(
+        vehicle_id: int,
+        log_id: int,
+        *,
+        status: VehicleLogStatus,
+    ) -> VehicleLog:
+        log = VehicleLogService.get_by_id(vehicle_id, log_id)
+        log.status = status
+        log.save(update_fields=["status"])
+        return log
 
 
 class MediaService:

@@ -6,9 +6,13 @@ from rest_framework.mixins import (
     ListModelMixin,
     RetrieveModelMixin,
 )
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
+
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter, SearchFilter
+
 from drf_spectacular.utils import (
     OpenApiParameter,
     OpenApiResponse,
@@ -17,6 +21,7 @@ from drf_spectacular.utils import (
 )
 from drf_spectacular.types import OpenApiTypes
 
+from apps.vehicles.vehicle.api.filters import VehicleFilter
 from apps.vehicles.vehicle.api.serializers import (
     MediaDetailSerializer,
     MediaListSerializer,
@@ -25,24 +30,115 @@ from apps.vehicles.vehicle.api.serializers import (
     VehicleListSerializer,
     VehicleLogDetailSerializer,
     VehicleLogListSerializer,
+    VehicleLogStatusSerializer,
     VehicleLogUpdateSerializer,
     VehicleLogWriteSerializer,
     VehicleUpdateSerializer,
     VehicleWriteSerializer,
 )
-from apps.vehicles.vehicle.domain.services import MediaService, VehicleLogService, VehicleService
+from apps.vehicles.vehicle.domain.models import Vehicle, VehicleLog
+from apps.vehicles.vehicle.domain.services import (
+    MediaService,
+    VehicleLogService,
+    VehicleService,
+)
 
-
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from django.db.models import Count
 # ---------------------------------------------------------------------------
 # VehicleViewSet
 # ---------------------------------------------------------------------------
+
+
+_SEARCH_PARAM = OpenApiParameter(
+    name="search",
+    type=str,
+    location=OpenApiParameter.QUERY,
+    description=(
+        "Búsqueda de texto libre. Aplica sobre **patent**, **brand** y **model**. "
+        "Ejemplo: `search=Toyota`"
+    ),
+)
+
+_ORDERING_PARAM = OpenApiParameter(
+    name="ordering",
+    type=str,
+    location=OpenApiParameter.QUERY,
+    description=(
+        "Campo por el que ordenar los resultados. "
+        "Prefija con `-` para orden descendente. "
+        "Valores permitidos: `patent`, `brand`, `model`, `year`, `log_count`, `created_at`. "
+        "Ejemplo: `ordering=-year`"
+    ),
+)
+
+_FILTER_PARAMS = [
+    OpenApiParameter(
+        "brand",
+        str,
+        OpenApiParameter.QUERY,
+        description="Filtrar por marca (insensible a mayúsculas). Ej: `brand=Ford`",
+    ),
+    OpenApiParameter(
+        "model",
+        str,
+        OpenApiParameter.QUERY,
+        description="Filtrar por modelo (insensible a mayúsculas). Ej: `model=Ranger`",
+    ),
+    OpenApiParameter(
+        "is_active",
+        bool,
+        OpenApiParameter.QUERY,
+        description="Estado del vehículo. `true` = activos, `false` = inactivos.",
+    ),
+    OpenApiParameter(
+        "year_min",
+        int,
+        OpenApiParameter.QUERY,
+        description="Año de fabricación mínimo (inclusivo). Ej: `year_min=2018`",
+    ),
+    OpenApiParameter(
+        "year_max",
+        int,
+        OpenApiParameter.QUERY,
+        description="Año de fabricación máximo (inclusivo). Ej: `year_max=2023`",
+    ),
+    OpenApiParameter(
+        "min_logs",
+        int,
+        OpenApiParameter.QUERY,
+        description="Cantidad mínima de logs asociados.",
+    ),
+    OpenApiParameter(
+        "max_logs",
+        int,
+        OpenApiParameter.QUERY,
+        description="Cantidad máxima de logs asociados.",
+    ),
+]
+
+
+# Agregar este parámetro junto a los otros _PARAMS al inicio del archivo
+_PATENT_PARAM = OpenApiParameter(
+    name="patent",
+    location=OpenApiParameter.QUERY,
+    description="Vehicle patent plate to search for (exact match).",
+    required=True,
+    type=str,
+)
 
 
 @extend_schema_view(
     list=extend_schema(
         tags=["Vehicles"],
         summary="List vehicles",
-        description="Returns a compact list of all registered vehicles including their log count.",
+        description=(
+            "Returns a compact list of all registered vehicles including their log count. "
+            "Supports **free-text search** (`search`), **field filtering** (`brand`, `model`, "
+            "`year_min`, `year_max`, `min_logs`, `max_logs`) "
+            "and **ordering** (`ordering`)."
+        ),
+        parameters=[_SEARCH_PARAM, _ORDERING_PARAM, *_FILTER_PARAMS],
         responses=VehicleListSerializer(many=True),
     ),
     retrieve=extend_schema(
@@ -87,6 +183,23 @@ from apps.vehicles.vehicle.domain.services import MediaService, VehicleLogServic
             404: OpenApiResponse(description="Vehicle not found"),
         },
     ),
+    by_patent=extend_schema(
+        tags=["Vehicles"],
+        summary="Find vehicle by patent",
+        description=(
+            "Returns the full representation of a vehicle looked up by its patent plate. "
+            "The search is **case-insensitive** and requires an exact match. "
+            "Returns `404` if no vehicle with the given patent exists."
+        ),
+        parameters=[_PATENT_PARAM],
+        responses={
+            200: VehicleDetailSerializer,
+            400: OpenApiResponse(
+                description="Missing required 'patent' query parameter"
+            ),
+            404: OpenApiResponse(description="Vehicle not found"),
+        },
+    ),
 )
 class VehicleViewSet(
     GenericViewSet,
@@ -98,23 +211,31 @@ class VehicleViewSet(
     serializer_class = VehicleListSerializer
     permission_classes = [IsAuthenticated]
 
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = VehicleFilter
+    search_fields = ["patent", "brand", "model"]  # ?search=
+    ordering_fields = ["patent", "brand", "model", "year", "log_count", "created_at"]
+    ordering = ["patent"]
+
     serializer_class_by_action = {
         "create": VehicleWriteSerializer,
         "partial_update": VehicleUpdateSerializer,
         "list": VehicleListSerializer,
         "retrieve": VehicleDetailSerializer,
+        "by_patent": VehicleDetailSerializer,
     }
 
     permission_classes_by_action = {
         "create": [IsAuthenticated, IsAdminUser],
-        "list": [IsAuthenticated],
-        "retrieve": [IsAuthenticated],
+        "list": [AllowAny],
+        "retrieve": [AllowAny],
         "partial_update": [IsAuthenticated, IsAdminUser],
         "destroy": [IsAuthenticated, IsAdminUser],
+        "by_patent": [AllowAny],
     }
 
     def get_queryset(self):  # type: ignore
-        return VehicleService.list_all()
+        return Vehicle.objects.annotate(log_count=Count("logs")).all()
 
     def get_object(self):  # type: ignore
         return VehicleService.get_by_id(self.kwargs["pk"])
@@ -159,6 +280,22 @@ class VehicleViewSet(
 
     def perform_destroy(self, instance):
         VehicleService.delete(instance.pk)
+
+    @action(detail=False, methods=["get"], url_path="by-patent")
+    def by_patent(self, request, *args, **kwargs):
+        patent = request.query_params.get("patent", "").strip()
+
+        if not patent:
+            return Response(
+                {"detail": "The 'patent' query parameter is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        instance = VehicleService.get_by_patent(patent)  # lanza Http404 si no existe
+        serializer = VehicleDetailSerializer(
+            instance, context=self.get_serializer_context()
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # ---------------------------------------------------------------------------
@@ -237,27 +374,35 @@ class VehicleLogViewSet(
 ):
     serializer_class = VehicleLogListSerializer
     permission_classes = [IsAuthenticated]
+    parser_classes = (
+        MultiPartParser,
+        FormParser,
+        JSONParser
+    )
+    ordering = ["created_by"]
 
     serializer_class_by_action = {
         "create": VehicleLogWriteSerializer,
         "partial_update": VehicleLogUpdateSerializer,
         "list": VehicleLogListSerializer,
         "retrieve": VehicleLogDetailSerializer,
+        "update_status": VehicleLogStatusSerializer,
     }
 
     permission_classes_by_action = {
-        "create": [IsAuthenticated],
-        "list": [IsAuthenticated],
-        "retrieve": [IsAuthenticated],
+        "create": [AllowAny],
+        "list": [AllowAny],
+        "retrieve": [AllowAny],
         "partial_update": [IsAuthenticated],
         "destroy": [IsAuthenticated, IsAdminUser],
+        "update_status": [IsAuthenticated],
     }
 
     def get_vehicle_pk(self) -> int:
         return int(self.kwargs["vehicle_pk"])
 
     def get_queryset(self):  # type: ignore
-        return VehicleLogService.list_by_vehicle(self.get_vehicle_pk())
+        return VehicleLog.objects.filter(vehicle_id=self.get_vehicle_pk())
 
     def get_object(self):  # type: ignore
         return VehicleLogService.get_by_id(self.get_vehicle_pk(), self.kwargs["pk"])
@@ -287,7 +432,7 @@ class VehicleLogViewSet(
     def perform_create(self, serializer):  # type: ignore
         return VehicleLogService.create(
             self.get_vehicle_pk(),
-            created_by=self.request.user, # type: ignore
+            created_by=self.request.user,  # type: ignore
             **serializer.validated_data,
         )
 
@@ -310,6 +455,32 @@ class VehicleLogViewSet(
 
     def perform_destroy(self, instance):
         VehicleLogService.delete(self.get_vehicle_pk(), instance.pk)
+
+    @extend_schema(
+        tags=["Vehicle Logs"],
+        summary="Update vehicle log status",
+        description="Update the status of a log entry.",
+        parameters=[_VEHICLE_PK_PARAMETER],
+        request=VehicleLogStatusSerializer,
+        responses={
+            200: VehicleLogDetailSerializer,
+            400: OpenApiResponse(description="Validation error"),
+            404: OpenApiResponse(description="Vehicle or log not found"),
+        },
+    )
+    @action(detail=True, methods=["patch"], url_path="status")
+    def update_status(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = VehicleLogService.update_status(
+            self.get_vehicle_pk(),
+            self.kwargs["pk"],
+            **serializer.validated_data,
+        )
+        read_serializer = VehicleLogDetailSerializer(
+            instance, context=self.get_serializer_context()
+        )
+        return Response(read_serializer.data, status=status.HTTP_200_OK)
 
 
 # ---------------------------------------------------------------------------
@@ -395,8 +566,8 @@ class MediaViewSet(
 
     permission_classes_by_action = {
         "create": [IsAuthenticated],
-        "list": [IsAuthenticated],
-        "retrieve": [IsAuthenticated],
+        "list": [AllowAny],
+        "retrieve": [AllowAny],
         "destroy": [IsAuthenticated, IsAdminUser],
     }
 

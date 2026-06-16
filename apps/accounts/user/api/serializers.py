@@ -8,6 +8,8 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError, AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from djoser.serializers import UserSerializer
+
 
 User = get_user_model()
 
@@ -77,4 +79,6 @@ class TokenValidateResponseSerializer(serializers.Serializer):
     validate = serializers.CharField()  # type: ignore
 
 
-
+class CustomUserSerializer(UserSerializer):
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + ("is_staff",)
