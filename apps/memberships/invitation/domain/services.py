@@ -101,3 +101,5 @@ class InvitationService:
 
         invitation.status = Status.ACCEPTED
         invitation.save(update_fields=["status"])
+
+        return user

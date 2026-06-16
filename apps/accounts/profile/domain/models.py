@@ -35,7 +35,7 @@ class Profile(models.Model):
     # --- Sugerencias adicionales ---
     birth_date = models.DateField(_("birth date"), blank=True, null=True)
     avatar = models.ImageField(
-        _("avatar"), upload_to="profiles/avatars/", blank=True, null=True
+        _("avatar"), upload_to="profiles/avatars/", blank=True, null=True, default="default/avatar.png"
     )
     address = models.CharField(_("address"), max_length=255, blank=True, default="")
 

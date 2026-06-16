@@ -10,6 +10,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from djoser.serializers import UserSerializer
 
+from apps.accounts.profile.api.serializers import ProfileSerializer
+
 
 User = get_user_model()
 
@@ -80,5 +82,8 @@ class TokenValidateResponseSerializer(serializers.Serializer):
 
 
 class CustomUserSerializer(UserSerializer):
+    profile = ProfileSerializer(read_only=True)
+
     class Meta(UserSerializer.Meta):
-        fields = UserSerializer.Meta.fields + ("is_staff",)
+        fields = UserSerializer.Meta.fields + ("is_staff", "profile",)
+        read_only_fields = fields

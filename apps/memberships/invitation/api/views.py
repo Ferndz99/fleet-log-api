@@ -18,6 +18,7 @@ from drf_spectacular.utils import (
 )
 from drf_spectacular.types import OpenApiTypes
 
+from apps.accounts.profile.domain.services import ProfileService
 from apps.common.api.serializers import ProblemDetailsSerializer
 from apps.memberships.invitation.domain.models import Invitation
 from apps.memberships.invitation.application.permissions import (
@@ -129,10 +130,15 @@ class InvitationViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
         serializer = InvitationAcceptSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        InvitationService.accept_invitation(
+        profile_data = serializer.validated_data.pop("profile", {})
+
+        user = InvitationService.accept_invitation(
             token=serializer.validated_data["token"],  # type: ignore
             password=serializer.validated_data["password"],  # type: ignore
         )
+
+        if profile_data:
+            ProfileService.create_profile(user, **profile_data)
 
         return Response(
             {"detail": "Invitation accepted"},
