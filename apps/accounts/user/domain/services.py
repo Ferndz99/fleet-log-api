@@ -8,14 +8,11 @@ class UserRegistrationService:
     @classmethod
     @transaction.atomic
     def get_or_create_user(
-        cls,
-        *,
-        email: str,
-        password: str,
+        cls, *, email: str, password: str, is_staff: bool = False
     ) -> User:
         user, created = User.objects.get_or_create(
             email=email,
-            defaults={"is_active": True},
+            defaults={"is_active": True, "is_staff": is_staff},
         )
 
         user.set_password(password)

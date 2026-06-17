@@ -12,6 +12,7 @@ class Invitation(models.Model):
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.PENDING
     )
+    is_staff = models.BooleanField(default=False)
 
     invited_by = models.ForeignKey("accounts.User", on_delete=models.PROTECT)
 

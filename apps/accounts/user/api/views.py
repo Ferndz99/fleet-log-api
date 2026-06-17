@@ -21,9 +21,13 @@ from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiResp
 
 
 from apps.accounts.user.api.docs import DocTags
-from apps.common.api.serializers import DetailResponseSerializer, ProblemDetailsSerializer
+from apps.common.api.serializers import (
+    DetailResponseSerializer,
+    ProblemDetailsSerializer,
+)
 from apps.accounts.user.api.serializers import (
     CustomTokenObtainPairSerializer,
+    CustomUserSerializer,
     TokenValidateResponseSerializer,
     UserLoginSerializer,
     UserLoginResponseSerializer,
@@ -271,7 +275,7 @@ class VerifyToken(APIView):
         description="Retrieve a paginated list of all users.",
         responses={
             status.HTTP_200_OK: OpenApiResponse(
-                response=UserSerializer(many=True),
+                response=CustomUserSerializer(many=True),
                 description="List of accounts retrieved successfully.",
             ),
             status.HTTP_401_UNAUTHORIZED: OpenApiResponse(
@@ -290,7 +294,7 @@ class VerifyToken(APIView):
         description="Fetch a specific user by ID.",
         responses={
             status.HTTP_200_OK: OpenApiResponse(
-                response=UserSerializer,
+                response=CustomUserSerializer,
                 description="Account details",
             ),
             status.HTTP_401_UNAUTHORIZED: OpenApiResponse(
@@ -468,7 +472,7 @@ class CustomUserViewSet(UserViewSet):
         responses={
             status.HTTP_200_OK: OpenApiResponse(
                 description="Current user data retrieved successfully",
-                response=UserSerializer,
+                response=CustomUserSerializer,
             ),
             status.HTTP_401_UNAUTHORIZED: OpenApiResponse(
                 description="Authentication credentials were not provided or are invalid.",

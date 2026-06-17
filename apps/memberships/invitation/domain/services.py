@@ -20,7 +20,7 @@ class InvitationService:
     INVITATION_EXPIRATION_HOURS = 48
 
     @staticmethod
-    def create(*, email: str, invited_by) -> Invitation:
+    def create(*, email: str, invited_by, is_staff: bool = False) -> Invitation:
 
         raw_token = secrets.token_urlsafe(32)
         token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
@@ -29,6 +29,7 @@ class InvitationService:
             email=email,
             invited_by=invited_by,
             token_hash=token_hash,
+            is_staff=is_staff,
             expires_at=timezone.now()
             + timedelta(hours=InvitationService.INVITATION_EXPIRATION_HOURS),
         )
@@ -67,10 +68,9 @@ class InvitationService:
         print("ejecutado")
 
     @staticmethod
-    def invite_user(*, email: str,  invited_by):
+    def invite_user(*, email: str, invited_by, is_staff: bool = False):
         invitation = InvitationService.create(
-            email=email,
-            invited_by=invited_by,
+            email=email, invited_by=invited_by, is_staff=is_staff
         )
 
         InvitationService.send_invitation_email_service(invitation=invitation)
@@ -92,6 +92,7 @@ class InvitationService:
         user = UserRegistrationService.get_or_create_user(
             email=invitation.email,
             password=password,
+            is_staff=invitation.is_staff,
         )
 
         Membership.objects.create(
@@ -101,3 +102,5 @@ class InvitationService:
 
         invitation.status = Status.ACCEPTED
         invitation.save(update_fields=["status"])
+
+        return user
