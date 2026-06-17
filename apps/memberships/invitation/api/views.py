@@ -19,6 +19,7 @@ from drf_spectacular.utils import (
 from drf_spectacular.types import OpenApiTypes
 
 from apps.accounts.profile.domain.services import ProfileService
+from apps.accounts.user.domain.services import UserRegistrationService
 from apps.common.api.serializers import ProblemDetailsSerializer
 from apps.memberships.invitation.domain.models import Invitation
 from apps.memberships.invitation.application.permissions import (
@@ -104,6 +105,7 @@ class InvitationViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
         InvitationService.invite_user(
             email=serializer.validated_data["email"],
             invited_by=self.request.user,
+            is_staff=serializer.validated_data["is_staff"],
         )
 
     @extend_schema(

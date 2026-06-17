@@ -8,9 +8,9 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError, AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from djoser.serializers import UserSerializer
+from djoser.serializers import UserSerializer, UserCreatePasswordRetypeSerializer
 
-from apps.accounts.profile.api.serializers import ProfileSerializer
+from apps.accounts.profile.api.serializers import ProfileSerializer, ProfileWriteSerializer
 
 
 User = get_user_model()
