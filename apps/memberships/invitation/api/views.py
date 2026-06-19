@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import ListModelMixin, CreateModelMixin
+from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin
 from rest_framework import serializers
 
 from django_filters.rest_framework import DjangoFilterBackend
@@ -54,6 +54,13 @@ from apps.memberships.invitation.domain.services import (
                 description="Order by created_at. Use '-' prefix for descending.",
                 enum=["created_at", "-created_at"],
             ),
+            OpenApiParameter(
+                name="email",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Search invitations by exact email.",
+                
+            ),
         ],
         responses={
             200: InvitationReadSerializer(many=True),
@@ -72,18 +79,28 @@ from apps.memberships.invitation.domain.services import (
         },
         tags=["Invitations"],
     ),
+    retrieve=extend_schema(
+        summary="Retrieve an invitation",
+        description="Return an invitation ",
+        tags=["Invitations"],
+    ),
 )
-class InvitationViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
+class InvitationViewSet(
+    GenericViewSet, ListModelMixin, CreateModelMixin, RetrieveModelMixin
+):
     queryset = Invitation.objects.all()
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ["email"]
     ordering_fields = ["created_at"]
     serializer_class = InvitationReadSerializer
     permission_classes = []
+    ordering = ["-created_at"]
+    filterset_fields = ["email"]
 
     serializer_class_by_action = {
         "create": InvitationCreateSerializer,
         "accept": InvitationAcceptSerializer,
+        "retrieve": InvitationReadSerializer,
     }
 
     permission_classes_by_action = {"create": [IsAuthenticated, IsAdminUser]}
@@ -95,7 +112,7 @@ class InvitationViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
         return [permission() for permission in permission_classes]
 
     def get_queryset(self):  # type: ignore
-        return Invitation.objects.all()
+        return Invitation.objects.select_related("invited_by")
 
     def get_serializer_class(self):
         return self.serializer_class_by_action.get(self.action, self.serializer_class)
