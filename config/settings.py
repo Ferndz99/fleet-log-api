@@ -3,6 +3,7 @@ from pathlib import Path
 from datetime import timedelta
 import environ
 import dj_database_url
+from urllib.parse import urlparse
 
 """
 --------------------
@@ -10,8 +11,6 @@ ROUTE AND ENVIRONMENT CONFIGURATION
 --------------------
 """
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-FRONTEND_URL = "http://localhost:5173"
 
 
 """
@@ -23,6 +22,8 @@ env = environ.Env()
 
 environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
+FRONTEND_URL = env("FRONTEND_URL")
+_parsed_frontend = urlparse(FRONTEND_URL)
 
 """
 ----------------
@@ -176,6 +177,8 @@ DJOSER = {
     "SEND_CONFIRMATION_EMAIL": True,
     "USER_CREATE_PASSWORD_RETYPE": True,
     "SET_PASSWORD_RETYPE": True,
+    "EMAIL_FRONTEND_DOMAIN": _parsed_frontend.netloc,
+    "EMAIL_FRONTEND_PROTOCOL": _parsed_frontend.scheme,
     "PASSWORD_RESET_CONFIRM_URL": "password-reset/{uid}/{token}",
     "PASSWORD_RESET_CONFIRM_RETYPE": True,
     "PASSWORD_RESET_SHOW_EMAIL_NOT_FOUND": True,

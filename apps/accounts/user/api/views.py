@@ -17,7 +17,12 @@ from rest_framework_simplejwt.exceptions import TokenError
 from djoser.views import UserViewSet
 from djoser.serializers import UserSerializer, UserCreatePasswordRetypeSerializer
 
-from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiResponse
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    extend_schema_view,
+    extend_schema,
+    OpenApiResponse,
+)
 
 
 from apps.accounts.user.api.docs import DocTags
@@ -32,6 +37,9 @@ from apps.accounts.user.api.serializers import (
     UserLoginSerializer,
     UserLoginResponseSerializer,
 )
+
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
 
 
 User = get_user_model()
@@ -248,6 +256,40 @@ class VerifyToken(APIView):
         return Response({"validate": True}, status=status.HTTP_200_OK)
 
 
+_SEARCH_PARAM = OpenApiParameter(
+    name="search",
+    type=str,
+    location=OpenApiParameter.QUERY,
+    description=(
+        "Búsqueda de texto libre. Aplica sobre **email**, **first_name**, "
+        "**last_name** y **rut** del perfil asociado. "
+        "Ejemplo: `search=Gonzalez`"
+    ),
+)
+
+_ORDERING_PARAM = OpenApiParameter(
+    name="ordering",
+    type=str,
+    location=OpenApiParameter.QUERY,
+    description=(
+        "Campo por el cual ordenar los resultados. "
+        "Se debe usar el prefijo `-` para orden descendente. "
+        "Valores permitidos: `email`,  `is_active`, "
+        "`profile__first_name`, `profile__last_name` y `profile__rut`. "
+        "Ejemplo: `ordering=profile__last_name`"
+    ),
+)
+
+_USER_FILTER_PARAMS = [
+    OpenApiParameter(
+        "is_active",
+        bool,
+        OpenApiParameter.QUERY,
+        description="Estado del usuario. `true` indica activos, `false` indica inactivos.",
+    ),
+]
+
+
 @extend_schema_view(
     create=extend_schema(
         tags=[DocTags.TAG_USER],
@@ -273,6 +315,7 @@ class VerifyToken(APIView):
         tags=[DocTags.TAG_ADMIN_USER],
         summary="List users",
         description="Retrieve a paginated list of all users.",
+        parameters=[_SEARCH_PARAM, _ORDERING_PARAM, *_USER_FILTER_PARAMS],
         responses={
             status.HTTP_200_OK: OpenApiResponse(
                 response=CustomUserSerializer(many=True),
@@ -443,6 +486,27 @@ class VerifyToken(APIView):
 )
 class CustomUserViewSet(UserViewSet):
     """UserViewSet with extended documentation for OpenAPI/Swagger."""
+
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    search_fields = [
+        "email",
+        "profile__first_name",
+        "profile__last_name",
+        "profile__rut",
+    ]
+    ordering_fields = [
+        "email",
+        "is_active",
+        "profile__first_name",
+        "profile__last_name",
+        "profile__rut",
+    ]
+    ordering = ["-created_at"]
+    filterset_fields = ["is_active"]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        return queryset.select_related("profile")
 
     @extend_schema(exclude=True)
     def set_username(self, request, *args, **kwargs):

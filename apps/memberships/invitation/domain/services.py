@@ -11,7 +11,11 @@ from django.utils import timezone
 
 from apps.accounts.user.domain.services import UserRegistrationService
 from apps.memberships.choices import Status
-from apps.memberships.invitation.domain.exceptions import InvitationExpired
+from apps.memberships.invitation.domain.exceptions import (
+    InvitationAlreadyUsed,
+    InvitationExpired,
+    InvitationNotFound,
+)
 from apps.memberships.invitation.domain.models import Invitation
 from apps.memberships.membership.domain.models import Membership
 
@@ -77,17 +81,79 @@ class InvitationService:
         return invitation
 
     @staticmethod
+    def validate_token(*, token: str) -> Invitation:
+        """
+        Valida que un token de invitación exista y siga siendo utilizable.
+        Si encuentra que ya expiró, actualiza su status a EXPIRED en este
+        mismo momento (expiración perezosa) para mantener la BD consistente
+        sin depender de un job periódico.
+        """
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+
+        with transaction.atomic():
+            try:
+                invitation = Invitation.objects.select_for_update().get(
+                    token_hash=token_hash
+                )
+            except Invitation.DoesNotExist:
+                raise InvitationNotFound()
+
+            if invitation.status == Status.PENDING and invitation.is_expired():
+                invitation.status = Status.EXPIRED
+                invitation.save(update_fields=["status"])
+
+        if invitation.status == Status.EXPIRED:
+            raise InvitationExpired(invitation=invitation)
+
+        if invitation.status == Status.ACCEPTED:
+            raise InvitationAlreadyUsed(invitation=invitation)
+
+        return invitation
+
+    @staticmethod
     @transaction.atomic
     def accept_invitation(*, token: str, password: str):
 
         token_hash = hashlib.sha256(token.encode()).hexdigest()
 
-        invitation = Invitation.objects.select_for_update().get(
-            token_hash=token_hash, status=Status.PENDING
-        )
+        try:
+            invitation = Invitation.objects.select_for_update().get(
+                token_hash=token_hash
+            )
+        except Invitation.DoesNotExist:
+            raise InvitationNotFound()
 
-        if invitation.expires_at < timezone.now():
-            raise InvitationExpired(invitation=invitation.pk)
+        # Expiración perezosa
+
+        if invitation.status == Status.PENDING and invitation.is_expired():
+            invitation.status = Status.EXPIRED
+            invitation.save(update_fields=["status"])
+
+        if invitation.status == Status.EXPIRED:
+            raise InvitationExpired(invitation=invitation)
+
+        if invitation.status == Status.ACCEPTED:
+            raise InvitationAlreadyUsed(invitation=invitation)
+
+        # if (
+        #     invitation.status == Status.PENDING
+        #     and invitation.expires_at < timezone.now()
+        # ):
+        #     invitation.status = Status.EXPIRED
+        #     invitation.save(update_fields=["status"])
+
+        # if invitation.status == Status.EXPIRED:
+        #     raise InvitationExpired(invitation=invitation)
+
+        # if invitation.status != Status.PENDING:
+        #     raise InvitationAlreadyUsed(invitation=invitation)
+
+        # invitation = Invitation.objects.select_for_update().get(
+        #     token_hash=token_hash, status=Status.PENDING
+        # )
+
+        # if invitation.expires_at < timezone.now():
+        #     raise InvitationExpired(invitation=invitation.pk)
 
         user = UserRegistrationService.get_or_create_user(
             email=invitation.email,
@@ -102,5 +168,12 @@ class InvitationService:
 
         invitation.status = Status.ACCEPTED
         invitation.save(update_fields=["status"])
+
+        (
+            Invitation.objects.select_for_update()
+            .filter(email=invitation.email, status=Status.PENDING)
+            .exclude(pk=invitation.pk)
+            .update(status=Status.EXPIRED)
+        )
 
         return user

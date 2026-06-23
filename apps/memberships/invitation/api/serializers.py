@@ -17,6 +17,17 @@ class InvitationAcceptSerializer(serializers.Serializer):
 
 
 class InvitationReadSerializer(serializers.ModelSerializer):
+    invited_by_email = serializers.SerializerMethodField()
+
     class Meta:
         model = Invitation
         fields = "__all__"
+
+    def get_invited_by_email(self, obj):
+        return obj.invited_by.email
+
+
+class InvitationValidateResponseSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    is_staff = serializers.BooleanField()
+    expires_at = serializers.DateTimeField()
