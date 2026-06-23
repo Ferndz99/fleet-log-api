@@ -21,6 +21,7 @@ from drf_spectacular.types import OpenApiTypes
 from apps.accounts.profile.domain.services import ProfileService
 from apps.accounts.user.domain.services import UserRegistrationService
 from apps.common.api.serializers import ProblemDetailsSerializer
+from apps.memberships.invitation.domain.exceptions import InvitationAlreadyUsed, InvitationExpired, InvitationNotFound
 from apps.memberships.invitation.domain.models import Invitation
 from apps.memberships.invitation.application.permissions import (
     HasCompanyOwnerOrAdminPermissions,
@@ -30,6 +31,7 @@ from apps.memberships.invitation.api.serializers import (
     InvitationCreateSerializer,
     InvitationAcceptSerializer,
     InvitationReadSerializer,
+    InvitationValidateResponseSerializer,
 )
 from apps.memberships.invitation.domain.services import (
     InvitationService,
@@ -59,7 +61,6 @@ from apps.memberships.invitation.domain.services import (
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.QUERY,
                 description="Search invitations by exact email.",
-                
             ),
         ],
         responses={
@@ -101,6 +102,7 @@ class InvitationViewSet(
         "create": InvitationCreateSerializer,
         "accept": InvitationAcceptSerializer,
         "retrieve": InvitationReadSerializer,
+        "validate": InvitationValidateResponseSerializer,
     }
 
     permission_classes_by_action = {"create": [IsAuthenticated, IsAdminUser]}
@@ -163,3 +165,114 @@ class InvitationViewSet(
             {"detail": "Invitation accepted"},
             status=status.HTTP_200_OK,
         )
+
+    @extend_schema(
+        summary="Validate invitation token",
+        description=(
+            "Checks whether an invitation token is valid (exists, is pending, "
+            "and has not expired). Does not accept the invitation. "
+            "This endpoint does not require authentication."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="token",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Invitation token from the invite link.",
+            ),
+        ],
+        responses={
+            200: InvitationValidateResponseSerializer,
+            400: ProblemDetailsSerializer,
+            404: ProblemDetailsSerializer,
+            410: ProblemDetailsSerializer,
+        },
+        tags=["Invitations"],
+    )
+    @action(
+        detail=False,
+        methods=["get"],
+        authentication_classes=[],
+        permission_classes=[],
+        url_path="validate",
+    )
+    def validate(self, request):
+        token = request.query_params.get("token")
+
+        if not token:
+            raise serializers.ValidationError({"token": "This field is required."})
+
+        # try:
+        invitation = InvitationService.validate_token(token=token)
+        # except Error:
+        #     return Response(
+        #         {"detail": "El token de invitación no existe."},
+        #         status=status.HTTP_404_NOT_FOUND,
+        #     )
+        # except InvitationExpired:
+        #     return Response(
+        #         {"detail": "El token de invitación ha expirado."},
+        #         status=status.HTTP_410_GONE,
+        #     )
+        # except InvitationAlreadyUsed:
+        #     return Response(
+        #         {"detail": "Esta invitación ya fue utilizada o cancelada."},
+        #         status=status.HTTP_409_CONFLICT,
+        #     )
+
+        serializer = InvitationValidateResponseSerializer(
+            {
+                "email": invitation.email,
+                "is_staff": invitation.is_staff,
+                "expires_at": invitation.expires_at,
+            }
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # @extend_schema(
+    #     summary="Validate invitation token",
+    #     description=(
+    #         "Checks whether an invitation token is valid (exists, is pending, "
+    #         "and has not expired). Does not accept the invitation. "
+    #         "This endpoint does not require authentication."
+    #     ),
+    #     parameters=[
+    #         OpenApiParameter(
+    #             name="token",
+    #             type=OpenApiTypes.STR,
+    #             location=OpenApiParameter.QUERY,
+    #             required=True,
+    #             description="Invitation token from the invite link.",
+    #         ),
+    #     ],
+    #     responses={
+    #         200: InvitationValidateResponseSerializer,
+    #         400: ProblemDetailsSerializer,
+    #         404: ProblemDetailsSerializer,
+    #     },
+    #     tags=["Invitations"],
+    # )
+    # @action(
+    #     detail=False,
+    #     methods=["get"],
+    #     authentication_classes=[],
+    #     permission_classes=[],
+    #     url_path="validate",
+    # )
+    # def validate(self, request):
+    #     token = request.query_params.get("token")
+
+    #     if not token:
+    #         raise serializers.ValidationError({"token": "This field is required."})
+
+    #     invitation = InvitationService.validate_token(token=token)
+
+    #     serializer = InvitationValidateResponseSerializer(
+    #         {
+    #             "email": invitation.email,
+    #             "is_staff": invitation.is_staff,
+    #             "expires_at": invitation.expires_at,
+    #         }
+    #     )
+    #     return Response(serializer.data, status=status.HTTP_200_OK)
