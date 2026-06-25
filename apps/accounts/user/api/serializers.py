@@ -86,11 +86,17 @@ class TokenValidateResponseSerializer(serializers.Serializer):
 
 class CustomUserSerializer(UserSerializer):
     profile = ProfileSerializer(read_only=True)
+    groups = serializers.SlugRelatedField(
+        many=True,
+        read_only=True,
+        slug_field="name"
+    )
 
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + (
             "is_staff",
             "is_active",
+            "groups",
             "profile",
         )
         read_only_fields = fields
