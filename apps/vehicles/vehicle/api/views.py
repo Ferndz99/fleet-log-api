@@ -38,6 +38,7 @@ from apps.vehicles.vehicle.api.serializers import (
     VehicleUpdateSerializer,
     VehicleWriteSerializer,
 )
+from apps.vehicles.vehicle.application.permissions import VehiclePermission
 from apps.vehicles.vehicle.domain.models import Vehicle, VehicleLog
 from apps.vehicles.vehicle.domain.services import (
     DashboardService,
@@ -230,7 +231,7 @@ class VehicleViewSet(
     DestroyModelMixin,
 ):
     serializer_class = VehicleListSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [VehiclePermission]
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = VehicleFilter
@@ -246,14 +247,14 @@ class VehicleViewSet(
         "by_patent": VehicleDetailSerializer,
     }
 
-    permission_classes_by_action = {
-        "create": [IsAuthenticated, IsAdminUser],
-        "list": [AllowAny],
-        "retrieve": [AllowAny],
-        "partial_update": [IsAuthenticated, IsAdminUser],
-        "destroy": [IsAuthenticated, IsAdminUser],
-        "by_patent": [AllowAny],
-    }
+    # permission_classes_by_action = {
+    #     "create": [IsAuthenticated, IsAdminUser],
+    #     "list": [AllowAny],
+    #     "retrieve": [AllowAny],
+    #     "partial_update": [IsAuthenticated, IsAdminUser],
+    #     "destroy": [IsAuthenticated, IsAdminUser],
+    #     "by_patent": [AllowAny],
+    # }
 
     def get_queryset(self):  # type: ignore
         return Vehicle.objects.annotate(log_count=Count("logs")).all()
@@ -264,11 +265,11 @@ class VehicleViewSet(
     def get_serializer_class(self):
         return self.serializer_class_by_action.get(self.action, self.serializer_class)
 
-    def get_permissions(self):
-        permission_classes = self.permission_classes_by_action.get(
-            self.action, self.permission_classes
-        )
-        return [permission() for permission in permission_classes]
+    # def get_permissions(self):
+    #     permission_classes = self.permission_classes_by_action.get(
+    #         self.action, self.permission_classes
+    #     )
+    #     return [permission() for permission in permission_classes]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
