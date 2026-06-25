@@ -1,3 +1,4 @@
+from apps.accounts.user.domain.services import UserRegistrationService
 from apps.memberships.choices import Role
 from apps.memberships.membership.domain.exceptions import (
     MembershipAlreadyActive,
@@ -18,6 +19,7 @@ class MembershipService:
 
         membership.is_active = True
         membership.save(update_fields=["is_active"])
+        UserRegistrationService.activate(user=membership.user)
 
     @staticmethod
     @transaction.atomic
@@ -38,6 +40,6 @@ class MembershipService:
         if not membership.is_active:
             raise MembershipAlreadyInactive(membership=membership.user)
 
-
         membership.is_active = False
         membership.save(update_fields=["is_active"])
+        UserRegistrationService.deacticate(user=membership.user)

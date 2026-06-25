@@ -1,6 +1,12 @@
 from rest_framework_nested import routers
+from django.urls import path
 
-from apps.vehicles.vehicle.api.views import MediaViewSet, VehicleLogViewSet, VehicleViewSet
+from apps.vehicles.vehicle.api.views import (
+    DashboardView,
+    MediaViewSet,
+    VehicleLogViewSet,
+    VehicleViewSet,
+)
 
 # /vehicles/
 router = routers.SimpleRouter()
@@ -14,4 +20,8 @@ logs_router.register(r"logs", VehicleLogViewSet, basename="vehicle-log")
 media_router = routers.NestedDefaultRouter(logs_router, r"logs", lookup="log")
 media_router.register(r"media", MediaViewSet, basename="vehicle-log-media")
 
-urlpatterns = router.urls + logs_router.urls + media_router.urls
+urlpatterns = [
+    path("dashboard/", DashboardView.as_view(), name="dashboard"),
+] + router.urls + logs_router.urls + media_router.urls
+
+# urlpatterns = router.urls + logs_router.urls + media_router.urls

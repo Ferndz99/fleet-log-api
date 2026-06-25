@@ -220,3 +220,112 @@ class VehicleListSerializer(serializers.ModelSerializer):
 
 class VehicleLogStatusSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=VehicleLogStatus.choices)
+
+
+class DashboardSummarySerializer(serializers.Serializer):
+    total_vehicles = serializers.IntegerField()
+    total_logs = serializers.IntegerField()
+    logs_today = serializers.IntegerField()
+    logs_this_week = serializers.IntegerField()
+    logs_this_month = serializers.IntegerField()
+    pending_logs = serializers.IntegerField()
+    pending_incidents = serializers.IntegerField()
+
+
+class LogsByStatusSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    label = serializers.CharField()
+    count = serializers.IntegerField()
+
+
+class LogsByTypeSerializer(serializers.Serializer):
+    type = serializers.CharField()
+    label = serializers.CharField()
+    count = serializers.IntegerField()
+
+
+class LogsByTypeAndStatusSerializer(serializers.Serializer):
+    type = serializers.CharField()
+    label = serializers.CharField()
+    statuses = serializers.DictField(child=serializers.IntegerField())
+
+
+class TopVehicleSerializer(serializers.Serializer):
+    vehicle_id = serializers.IntegerField(source="id")
+    patent = serializers.CharField()
+    brand = serializers.CharField()
+    model = serializers.CharField()
+    log_count = serializers.IntegerField()
+
+
+class TopUserSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(source="id")
+    email = serializers.CharField()
+    full_name = serializers.CharField()
+    log_count = serializers.IntegerField()
+
+
+class RecentLogVehicleSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    patent = serializers.CharField()
+
+
+class RecentLogUserSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    email = serializers.CharField()
+
+
+class RecentLogSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    type = serializers.CharField()
+    status = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    vehicle = RecentLogVehicleSerializer()
+    created_by = RecentLogUserSerializer(allow_null=True)
+    media_count = serializers.IntegerField()
+
+
+class MediaSummarySerializer(serializers.Serializer):
+    total_media = serializers.IntegerField()
+    photos = serializers.IntegerField()
+    videos = serializers.IntegerField()
+    logs_without_media = serializers.IntegerField()
+
+
+# --- Serializer raíz ---
+
+
+class DashboardSerializer(serializers.Serializer):
+    summary = DashboardSummarySerializer()
+    logs_by_status = LogsByStatusSerializer(many=True)
+    logs_by_type = LogsByTypeSerializer(many=True)
+    logs_by_type_and_status = LogsByTypeAndStatusSerializer(many=True)
+    top_vehicles_by_logs = TopVehicleSerializer(many=True)
+    top_users_by_logs = TopUserSerializer(many=True)
+    recent_logs = RecentLogSerializer(many=True)
+    media_summary = MediaSummarySerializer()
+
+
+class DashboardQuerySerializer(serializers.Serializer):
+    date_from = serializers.DateField(
+        required=False,
+        allow_null=True,
+        help_text="Fecha de inicio (inclusive). Formato YYYY-MM-DD.",
+    )
+    date_to = serializers.DateField(
+        required=False,
+        allow_null=True,
+        help_text="Fecha de término (inclusive). Formato YYYY-MM-DD.",
+    )
+
+    def validate(self, attrs):
+        date_from = attrs.get("date_from")
+        date_to = attrs.get("date_to")
+
+        if date_from and date_to and date_from > date_to:
+            raise serializers.ValidationError(
+                {"date_to": "'date_to' cannot be earlier than 'date_from'."}
+            )
+
+        return attrs

@@ -19,3 +19,11 @@ class UserRegistrationService:
         user.save(update_fields=["password"])
 
         return user
+
+    def activate(*, user: User):
+        user.is_active = True
+        user.save(update_fields=["is_active"])
+
+    def deacticate(*, user: User):
+        user.is_active = False
+        user.save(update_fields=["is_active"])

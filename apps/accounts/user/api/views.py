@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.db.models import Q
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
@@ -506,7 +507,7 @@ class CustomUserViewSet(UserViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        return queryset.select_related("profile")
+        return queryset.select_related("profile", "membership")
 
     @extend_schema(exclude=True)
     def set_username(self, request, *args, **kwargs):
