@@ -96,6 +96,7 @@ class MembershipViewSet(GenericViewSet, ListModelMixin, RetrieveModelMixin):
     search_fields = ["user__email"]
     ordering_fields = ["joined_at", "invited_at"]
     filterset_class = MembershipFilter
+    ordering = ["-joined_at"]
 
     def get_queryset(self):  # type: ignore
         return Membership.objects.all()

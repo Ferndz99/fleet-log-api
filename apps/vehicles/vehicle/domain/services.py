@@ -1,4 +1,8 @@
 from __future__ import annotations
+from datetime import date, timedelta
+
+from django.db.models import Count, Q
+from django.utils import timezone
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import UploadedFile
@@ -15,6 +19,9 @@ from apps.vehicles.vehicle.domain.exceptions import (
     VehiclePatentNotFound,
 )
 from .models import Media, Vehicle, VehicleLog
+
+from django.db.models import Count, F, Value
+from django.db.models.functions import Concat, Coalesce
 
 User = get_user_model()
 
@@ -235,3 +242,226 @@ class MediaService:
         media = MediaService.get_by_id(media_id)
         media.file.delete(save=False)  # removes the physical file from storage
         media.delete()
+
+
+TOP_VEHICLES_LIMIT = 5
+TOP_USERS_LIMIT = 5
+RECENT_LOGS_LIMIT = 10
+
+
+class DashboardService:
+    """Builds aggregated statistics for the admin dashboard."""
+
+    @staticmethod
+    def get_dashboard_data(
+        *,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> dict:
+        logs_qs = DashboardService._get_logs_queryset(date_from, date_to)
+
+        return {
+            "summary": DashboardService._get_summary(logs_qs),
+            "logs_by_status": DashboardService._get_logs_by_status(logs_qs),
+            "logs_by_type": DashboardService._get_logs_by_type(logs_qs),
+            "logs_by_type_and_status": DashboardService._get_logs_by_type_and_status(
+                logs_qs
+            ),
+            "top_vehicles_by_logs": DashboardService._get_top_vehicles(logs_qs),
+            "top_users_by_logs": DashboardService._get_top_users(logs_qs),
+            "recent_logs": DashboardService._get_recent_logs(logs_qs),
+            "media_summary": DashboardService._get_media_summary(logs_qs),
+        }
+
+    # --- Queryset base ---
+
+    @staticmethod
+    def _get_logs_queryset(date_from: date | None, date_to: date | None):
+        qs = VehicleLog.objects.all()
+        if date_from is not None:
+            qs = qs.filter(created_at__date__gte=date_from)
+        if date_to is not None:
+            qs = qs.filter(created_at__date__lte=date_to)
+        return qs
+
+    # --- Summary ---
+
+    @staticmethod
+    def _get_summary(logs_qs) -> dict:
+        today = timezone.now().date()
+        week_start = today - timedelta(days=today.weekday())
+        month_start = today.replace(day=1)
+
+        # logs_today/this_week/this_month always reflect "now",
+        # independent of date_from/date_to (esos son trend indicators,
+        # no parte del rango filtrado).
+        all_logs = VehicleLog.objects.all()
+
+        return {
+            "total_vehicles": Vehicle.objects.count(),
+            "total_logs": logs_qs.count(),
+            "logs_today": all_logs.filter(created_at__date=today).count(),
+            "logs_this_week": all_logs.filter(created_at__date__gte=week_start).count(),
+            "logs_this_month": all_logs.filter(
+                created_at__date__gte=month_start
+            ).count(),
+            "pending_logs": logs_qs.filter(status=VehicleLogStatus.PENDING).count(),
+            "pending_incidents": logs_qs.filter(
+                status=VehicleLogStatus.PENDING,
+                type=VehicleLogType.INCIDENT,
+            ).count(),
+        }
+
+    # --- Distribuciones ---
+
+    @staticmethod
+    def _get_logs_by_status(logs_qs) -> list[dict]:
+        counts = dict(
+            logs_qs.values_list("status")
+            .annotate(count=Count("id"))
+            .values_list("status", "count")
+        )
+        return [
+            {"status": value, "label": label, "count": counts.get(value, 0)}
+            for value, label in VehicleLogStatus.choices
+        ]
+
+    @staticmethod
+    def _get_logs_by_type(logs_qs) -> list[dict]:
+        counts = dict(
+            logs_qs.values_list("type")
+            .annotate(count=Count("id"))
+            .values_list("type", "count")
+        )
+        return [
+            {"type": value, "label": label, "count": counts.get(value, 0)}
+            for value, label in VehicleLogType.choices
+        ]
+
+    @staticmethod
+    def _get_logs_by_type_and_status(logs_qs) -> list[dict]:
+        raw = logs_qs.values("type", "status").annotate(count=Count("id"))
+
+        lookup: dict[str, dict[str, int]] = {}
+        for row in raw:
+            lookup.setdefault(row["type"], {})[row["status"]] = row["count"]
+
+        return [
+            {
+                "type": type_value,
+                "label": type_label,
+                "statuses": {
+                    status_value: lookup.get(type_value, {}).get(status_value, 0)
+                    for status_value, _ in VehicleLogStatus.choices
+                },
+            }
+            for type_value, type_label in VehicleLogType.choices
+        ]
+
+    # --- Rankings ---
+
+    @staticmethod
+    def _get_top_vehicles(logs_qs) -> list[dict]:
+        top = (
+            logs_qs.values(
+                "vehicle_id", "vehicle__patent", "vehicle__brand", "vehicle__model"
+            )
+            .annotate(log_count=Count("id"))
+            .order_by("-log_count")[:TOP_VEHICLES_LIMIT]
+        )
+        return [
+            {
+                "id": row["vehicle_id"],
+                "patent": row["vehicle__patent"],
+                "brand": row["vehicle__brand"],
+                "model": row["vehicle__model"],
+                "log_count": row["log_count"],
+            }
+            for row in top
+        ]
+
+    # @staticmethod
+    # def _get_top_users(logs_qs) -> list[dict]:
+    #     top = (
+    #         logs_qs.exclude(created_by__isnull=True)
+    #         .values("created_by_id", "created_by__email")
+    #         .annotate(log_count=Count("id"))
+    #         .order_by("-log_count")[:TOP_USERS_LIMIT]
+    #     )
+    #     return [
+    #         {
+    #             "id": row["created_by_id"],
+    #             "email": row["created_by__email"],
+    #             "log_count": row["log_count"],
+    #         }
+    #         for row in top
+    #     ]
+    @staticmethod
+    def _get_top_users(logs_qs) -> list[dict]:
+        top = (
+            logs_qs.exclude(created_by__isnull=True)
+            .values("created_by_id")
+            .annotate(
+                email=F("created_by__email"),
+                full_name=Concat(
+                    "created_by__profile__first_name",
+                    Value(" "),
+                    "created_by__profile__last_name",
+                    Value(" "),
+                    Coalesce("created_by__profile__second_last_name", Value("")),
+                ),
+                log_count=Count("id"),
+            )
+            .order_by("-log_count")[:TOP_USERS_LIMIT]
+        )
+
+        return [
+            {
+                "id": row["created_by_id"],
+                "email": row["email"],
+                "full_name": row["full_name"].strip(),
+                "log_count": row["log_count"],
+            }
+            for row in top
+        ]
+
+    # --- Actividad reciente ---
+
+    @staticmethod
+    def _get_recent_logs(logs_qs) -> list[dict]:
+        logs = (
+            logs_qs.select_related("vehicle", "created_by")
+            .annotate(media_count=Count("media_files"))
+            .order_by("-created_at")[:RECENT_LOGS_LIMIT]
+        )
+        return [
+            {
+                "id": log.id,
+                "title": log.title,
+                "type": log.type,
+                "status": log.status,
+                "created_at": log.created_at,
+                "vehicle": {"id": log.vehicle_id, "patent": log.vehicle.patent},
+                "created_by": (
+                    {"id": log.created_by_id, "email": log.created_by.email}
+                    if log.created_by_id
+                    else None
+                ),
+                "media_count": log.media_count,
+            }
+            for log in logs
+        ]
+
+    # --- Multimedia ---
+
+    @staticmethod
+    def _get_media_summary(logs_qs) -> dict:
+        media_qs = Media.objects.filter(vehicle_log__in=logs_qs)
+        logs_without_media = logs_qs.filter(media_files__isnull=True).distinct().count()
+
+        return {
+            "total_media": media_qs.count(),
+            "photos": media_qs.filter(type=Media.MediaType.PHOTO).count(),
+            "videos": media_qs.filter(type=Media.MediaType.VIDEO).count(),
+            "logs_without_media": logs_without_media,
+        }

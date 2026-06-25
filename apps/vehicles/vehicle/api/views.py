@@ -23,6 +23,8 @@ from drf_spectacular.types import OpenApiTypes
 
 from apps.vehicles.vehicle.api.filters import VehicleFilter
 from apps.vehicles.vehicle.api.serializers import (
+    DashboardQuerySerializer,
+    DashboardSerializer,
     MediaDetailSerializer,
     MediaListSerializer,
     MediaWriteSerializer,
@@ -38,6 +40,7 @@ from apps.vehicles.vehicle.api.serializers import (
 )
 from apps.vehicles.vehicle.domain.models import Vehicle, VehicleLog
 from apps.vehicles.vehicle.domain.services import (
+    DashboardService,
     MediaService,
     VehicleLogService,
     VehicleService,
@@ -45,6 +48,7 @@ from apps.vehicles.vehicle.domain.services import (
 
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.db.models import Count
+from rest_framework.views import APIView
 # ---------------------------------------------------------------------------
 # VehicleViewSet
 # ---------------------------------------------------------------------------
@@ -125,6 +129,23 @@ _PATENT_PARAM = OpenApiParameter(
     description="Vehicle patent plate to search for (exact match).",
     required=True,
     type=str,
+)
+
+
+_DATE_FROM_PARAM = OpenApiParameter(
+    name="date_from",
+    type=str,
+    location=OpenApiParameter.QUERY,
+    required=False,
+    description="Fecha de inicio (inclusive) para filtrar el dashboard. Formato ISO 8601. Ej: `2026-06-01`",
+)
+
+_DATE_TO_PARAM = OpenApiParameter(
+    name="date_to",
+    type=str,
+    location=OpenApiParameter.QUERY,
+    required=False,
+    description="Fecha de término (inclusive) para filtrar el dashboard. Formato ISO 8601. Ej: `2026-06-22`",
 )
 
 
@@ -374,11 +395,7 @@ class VehicleLogViewSet(
 ):
     serializer_class = VehicleLogListSerializer
     permission_classes = [IsAuthenticated]
-    parser_classes = (
-        MultiPartParser,
-        FormParser,
-        JSONParser
-    )
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
     ordering = ["created_by"]
 
     serializer_class_by_action = {
@@ -611,3 +628,37 @@ class MediaViewSet(
 
     def perform_destroy(self, instance):
         MediaService.delete(instance.pk)
+
+
+@extend_schema(
+    tags=["Dashboard"],
+    summary="Get dashboard data",
+    description=(
+        "Returns aggregated statistics for the admin dashboard: summary KPIs, "
+        "log distribution by status/type, top vehicles and users by log count, "
+        "recent activity and media stats. "
+        "`date_from`/`date_to` are optional and filter logs by creation date; "
+        "`summary.total_vehicles` and the live counters "
+        "(`logs_today`, `logs_this_week`, `logs_this_month`) are never affected "
+        "by these filters."
+    ),
+    parameters=[_DATE_FROM_PARAM, _DATE_TO_PARAM],
+    responses={
+        200: DashboardSerializer,
+        400: OpenApiResponse(description="Invalid query parameters"),
+    },
+)
+class DashboardView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def get(self, request, *args, **kwargs):
+        query = DashboardQuerySerializer(data=request.query_params)
+        query.is_valid(raise_exception=True)
+
+        data = DashboardService.get_dashboard_data(
+            date_from=query.validated_data.get("date_from"),
+            date_to=query.validated_data.get("date_to"),
+        )
+
+        serializer = DashboardSerializer(data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
