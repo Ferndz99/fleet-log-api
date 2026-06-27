@@ -4,6 +4,8 @@ from django.db.models import Q
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.models import Permission
+
 
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -37,11 +39,14 @@ from apps.accounts.user.api.serializers import (
     TokenValidateResponseSerializer,
     UserLoginSerializer,
     UserLoginResponseSerializer,
+    UserPermissionSerializer,
+    SetUserGroupsSerializer,
 )
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
+from django.contrib.auth.models import Group
 
 User = get_user_model()
 
@@ -292,26 +297,26 @@ _USER_FILTER_PARAMS = [
 
 
 @extend_schema_view(
-    create=extend_schema(
-        tags=[DocTags.TAG_USER],
-        summary="Create a new user",
-        description="Endpoint to create a new user.",
-        request=UserCreatePasswordRetypeSerializer,
-        responses={
-            status.HTTP_201_CREATED: OpenApiResponse(
-                response=UserSerializer,
-                description="Account created successfully",
-            ),
-            status.HTTP_400_BAD_REQUEST: OpenApiResponse(
-                response=ProblemDetailsSerializer,
-                description="Validation error",
-            ),
-            status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
-                response=ProblemDetailsSerializer,
-                description="Server error during login.",
-            ),
-        },
-    ),
+    # create=extend_schema(
+    #     tags=[DocTags.TAG_USER],
+    #     summary="Create a new user",
+    #     description="Endpoint to create a new user.",
+    #     request=UserCreatePasswordRetypeSerializer,
+    #     responses={
+    #         status.HTTP_201_CREATED: OpenApiResponse(
+    #             response=UserSerializer,
+    #             description="Account created successfully",
+    #         ),
+    #         status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+    #             response=ProblemDetailsSerializer,
+    #             description="Validation error",
+    #         ),
+    #         status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
+    #             response=ProblemDetailsSerializer,
+    #             description="Server error during login.",
+    #         ),
+    #     },
+    # ),
     list=extend_schema(
         tags=[DocTags.TAG_ADMIN_USER],
         summary="List users",
@@ -510,6 +515,10 @@ class CustomUserViewSet(UserViewSet):
         return queryset.select_related("profile", "membership")
 
     @extend_schema(exclude=True)
+    def create(self, request, *args, **kwargs):
+        raise NotImplementedError("This endpoint is disabled.")
+
+    @extend_schema(exclude=True)
     def set_username(self, request, *args, **kwargs):
         raise NotImplementedError("This endpoint is disabled.")
 
@@ -572,6 +581,8 @@ class CustomUserViewSet(UserViewSet):
     )
     @extend_schema(
         tags=[DocTags.TAG_USER],
+        exclude=True,
+        methods=["DELETE"],
         summary="Delete current user",
         description="Delete the current authenticated user. No request body required.",
         request=None,
@@ -606,4 +617,76 @@ class CustomUserViewSet(UserViewSet):
             # return self.partial_update(request, *args, **kwargs)
             raise NotImplementedError("This endpoint is disabled.")
         elif request.method == "DELETE":
-            return self.destroy(request, *args, **kwargs)
+            # return self.destroy(request, *args, **kwargs)
+            raise NotImplementedError("This endpoint is disabled.")
+
+    @extend_schema(
+        tags=[DocTags.TAG_ADMIN_USER],
+        summary="Add permission to user",
+        description="lorem ipsum",
+        request=UserPermissionSerializer,
+        responses={
+            status.HTTP_204_NO_CONTENT: OpenApiResponse(
+                description="Permission added succesfully"
+            ),
+        },
+    )
+    @action(detail=True, methods=["post"])
+    def add_permissions(self, request, *args, **kwargs):
+        user = self.get_object()
+
+        serializer = UserPermissionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user.user_permissions.add(
+            *Permission.objects.filter(
+                id__in=serializer.validated_data["permission_ids"]
+            )
+        )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        tags=[DocTags.TAG_ADMIN_USER],
+        summary="Remove permission to user",
+        description="lorem ipsum",
+        request=UserPermissionSerializer,
+        responses={
+            status.HTTP_204_NO_CONTENT: OpenApiResponse(
+                description="Permission removed succesfully"
+            ),
+        },
+    )
+    @action(detail=True, methods=["post"])
+    def remove_permissions(self, request, *args, **kwargs):
+        user = self.get_object()
+
+        serializer = UserPermissionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user.user_permissions.remove(
+            *Permission.objects.filter(
+                id__in=serializer.validated_data["permission_ids"]
+            )
+        )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        summary="add groups to user",
+        request=SetUserGroupsSerializer,
+        responses={
+            status.HTTP_204_NO_CONTENT: OpenApiResponse(
+                description="Permission removed succesfully"
+            ),
+        },
+    )
+    @action(detail=True, methods=["put"])
+    def set_groups(self, request, *args, **kwargs):
+        user = self.get_object()
+        serializer = SetUserGroupsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        groups = Group.objects.filter(id__in=serializer.validated_data["group_ids"])
+        user.groups.set(groups)
+        return Response(status=status.HTTP_204_NO_CONTENT)

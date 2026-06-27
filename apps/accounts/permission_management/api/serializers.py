@@ -30,11 +30,16 @@ class GroupSerializer(serializers.ModelSerializer):
 
     # permissions = PermissionSerializer(many=True, read_only=True)
 
+    permission_count = serializers.IntegerField(read_only=True)
+    users_count = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Group
         fields = [
             "id",
             "name",
+            "permission_count",
+            "users_count",
         ]
 
 
@@ -45,10 +50,23 @@ class GroupDetailSerializer(serializers.ModelSerializer):
 
     permissions = PermissionSerializer(many=True, read_only=True)
     users = CustomUserSerializer(many=True, read_only=True, source="user_set")
+    permissions_ids = serializers.PrimaryKeyRelatedField(
+        many=True, read_only=True, source="permissions"
+    )
+    users_ids = serializers.PrimaryKeyRelatedField(
+        many=True, read_only=True, source="user_set"
+    )
 
     class Meta:
         model = Group
-        fields = ["id", "name", "permissions", "users"]
+        fields = [
+            "id",
+            "name",
+            "permissions_ids",
+            "users_ids",
+            "permissions",
+            "users",
+        ]
 
 
 class AddUserGroupSerializer(serializers.Serializer):

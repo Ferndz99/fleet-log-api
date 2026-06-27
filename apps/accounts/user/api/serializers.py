@@ -86,17 +86,39 @@ class TokenValidateResponseSerializer(serializers.Serializer):
 
 class CustomUserSerializer(UserSerializer):
     profile = ProfileSerializer(read_only=True)
-    groups = serializers.SlugRelatedField(
+    groups = serializers.SlugRelatedField(many=True, read_only=True, slug_field="name")
+    user_permissions = serializers.SlugRelatedField(
         many=True,
         read_only=True,
-        slug_field="name"
+        slug_field="name",
     )
+
+    effective_permissions = serializers.SerializerMethodField()
 
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + (
             "is_staff",
             "is_active",
-            "groups",
             "profile",
+            "groups",
+            "user_permissions",
+            "effective_permissions",
         )
         read_only_fields = fields
+
+    def get_effective_permissions(self, obj):
+        return sorted(obj.get_all_permissions())
+
+
+# class CustomBasicUserSerializer()
+
+
+class UserPermissionSerializer(serializers.Serializer):
+    permission_ids = serializers.ListField(child=serializers.IntegerField())
+
+
+class SetUserGroupsSerializer(serializers.Serializer):
+    group_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_empty=True,
+    )
