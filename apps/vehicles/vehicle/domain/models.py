@@ -26,7 +26,7 @@ class Vehicle(models.Model):
             models.Index(fields=["patent"], name="vehicle_patent_idx"),
         ]
         permissions = [
-            ("search_vehicle_by_patent", "Can search vehicle by patent"),
+            ("search_vehicle_by_patent", _("Can search vehicle by patent")),
         ]
 
     def __str__(self) -> str:
@@ -70,6 +70,7 @@ class VehicleLog(models.Model):
                 fields=["vehicle", "-created_at"], name="vehiclelog_vehicle_date_idx"
             ),
         ]
+        permissions = [("update_vehiclelog_status", _("Can change vehicle log status"))]
 
     def __str__(self) -> str:
         return f"[{self.vehicle.patent}] {self.title}"

@@ -38,7 +38,11 @@ from apps.vehicles.vehicle.api.serializers import (
     VehicleUpdateSerializer,
     VehicleWriteSerializer,
 )
-from apps.vehicles.vehicle.application.permissions import VehiclePermission
+from apps.vehicles.vehicle.application.permissions import (
+    MediaPermissions,
+    VehicleLogPermissions,
+    VehiclePermission,
+)
 from apps.vehicles.vehicle.domain.models import Vehicle, VehicleLog
 from apps.vehicles.vehicle.domain.services import (
     DashboardService,
@@ -395,7 +399,7 @@ class VehicleLogViewSet(
     DestroyModelMixin,
 ):
     serializer_class = VehicleLogListSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [VehicleLogPermissions]
     parser_classes = (MultiPartParser, FormParser, JSONParser)
     ordering = ["created_by"]
 
@@ -405,15 +409,6 @@ class VehicleLogViewSet(
         "list": VehicleLogListSerializer,
         "retrieve": VehicleLogDetailSerializer,
         "update_status": VehicleLogStatusSerializer,
-    }
-
-    permission_classes_by_action = {
-        "create": [AllowAny],
-        "list": [AllowAny],
-        "retrieve": [AllowAny],
-        "partial_update": [IsAuthenticated],
-        "destroy": [IsAuthenticated, IsAdminUser],
-        "update_status": [IsAuthenticated],
     }
 
     def get_vehicle_pk(self) -> int:
@@ -427,12 +422,6 @@ class VehicleLogViewSet(
 
     def get_serializer_class(self):
         return self.serializer_class_by_action.get(self.action, self.serializer_class)
-
-    def get_permissions(self):
-        permission_classes = self.permission_classes_by_action.get(
-            self.action, self.permission_classes
-        )
-        return [permission() for permission in permission_classes]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -574,19 +563,12 @@ class MediaViewSet(
     DestroyModelMixin,
 ):
     serializer_class = MediaListSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [MediaPermissions]
 
     serializer_class_by_action = {
         "create": MediaWriteSerializer,
         "list": MediaListSerializer,
         "retrieve": MediaDetailSerializer,
-    }
-
-    permission_classes_by_action = {
-        "create": [IsAuthenticated],
-        "list": [AllowAny],
-        "retrieve": [AllowAny],
-        "destroy": [IsAuthenticated, IsAdminUser],
     }
 
     def get_vehicle_pk(self) -> int:
@@ -603,12 +585,6 @@ class MediaViewSet(
 
     def get_serializer_class(self):
         return self.serializer_class_by_action.get(self.action, self.serializer_class)
-
-    def get_permissions(self):
-        permission_classes = self.permission_classes_by_action.get(
-            self.action, self.permission_classes
-        )
-        return [permission() for permission in permission_classes]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
