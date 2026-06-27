@@ -25,6 +25,9 @@ class Vehicle(models.Model):
         indexes = [
             models.Index(fields=["patent"], name="vehicle_patent_idx"),
         ]
+        permissions = [
+            ("search_vehicle_by_patent", "Can search vehicle by patent"),
+        ]
 
     def __str__(self) -> str:
         return f"{self.brand} {self.model} ({self.year}) — {self.patent}"
