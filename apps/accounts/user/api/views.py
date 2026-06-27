@@ -622,12 +622,16 @@ class CustomUserViewSet(UserViewSet):
 
     @extend_schema(
         tags=[DocTags.TAG_ADMIN_USER],
-        summary="Add permission to user",
-        description="lorem ipsum",
+        summary="Add permissions to user",
+        description=(
+            "Incrementally adds the given permissions to the user, keeping any "
+            "permissions the user already has. Use `set_groups` if you need a "
+            "full replacement instead."
+        ),
         request=UserPermissionSerializer,
         responses={
             status.HTTP_204_NO_CONTENT: OpenApiResponse(
-                description="Permission added succesfully"
+                description="Permissions added successfully"
             ),
         },
     )
@@ -648,12 +652,12 @@ class CustomUserViewSet(UserViewSet):
 
     @extend_schema(
         tags=[DocTags.TAG_ADMIN_USER],
-        summary="Remove permission to user",
-        description="lorem ipsum",
+        summary="Remove permissions from user",
+        description="Incrementally removes the given permissions from the user.",
         request=UserPermissionSerializer,
         responses={
             status.HTTP_204_NO_CONTENT: OpenApiResponse(
-                description="Permission removed succesfully"
+                description="Permissions removed successfully"
             ),
         },
     )
@@ -673,11 +677,22 @@ class CustomUserViewSet(UserViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
-        summary="add groups to user",
+        tags=[DocTags.TAG_ADMIN_USER],
+        summary="Set user groups",
+        description=(
+            "Replaces the **full list** of groups (roles) assigned to this user. "
+            "Equivalent to a `PUT` over the group_ids M2M relation: any group not "
+            "included in `group_ids` is removed from the user. To add or remove a "
+            "single group without affecting the others, use the `set_groups` "
+            "endpoint on `GroupViewSet` (`add_users`/`remove_users`) instead."
+        ),
         request=SetUserGroupsSerializer,
         responses={
             status.HTTP_204_NO_CONTENT: OpenApiResponse(
-                description="Permission removed succesfully"
+                description="Groups set successfully"
+            ),
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="One or more group_ids do not exist"
             ),
         },
     )
