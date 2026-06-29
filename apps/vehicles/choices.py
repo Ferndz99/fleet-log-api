@@ -1,16 +1,18 @@
 from django.db import models
+from django.utils.translation import gettext_lazy as _
+
 
 class VehicleLogType(models.TextChoices):
-    INCIDENT = "incident", "Incident"
-    MAINTENANCE = "maintenance", "Maintenance"
-    OBSERVATION = "observation", "Observation"
-    CLEANING = "cleaning", "Cleaning"
+    INCIDENT = "incident", _("Incident")
+    MAINTENANCE = "maintenance", _("Maintenance")
+    OBSERVATION = "observation", _("Observation")
+    CLEANING = "cleaning", _("Cleaning")
 
 
 class VehicleLogStatus(models.TextChoices):
-    PENDING = "pending", "Pending"
-    REVIEWED = "reviewed", "Reviewed"
-    RESOLVED = "resolved", "Resolved"
+    PENDING = "pending", _("Pending")
+    REVIEWED = "reviewed", _("Reviewed")
+    RESOLVED = "resolved", _("Resolved")
 
 
 class SeverityLevel(models.TextChoices):

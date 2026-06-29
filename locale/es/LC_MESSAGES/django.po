@@ -1,0 +1,513 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-27 19:07-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: .\apps\accounts\permission_management\api\serializers.py:10
+#, python-format
+msgid "Add %(model)s"
+msgstr "Agregar %(model)s"
+
+#: .\apps\accounts\permission_management\api\serializers.py:11
+#, python-format
+msgid "Change %(model)s"
+msgstr "Cambiar %(model)s"
+
+#: .\apps\accounts\permission_management\api\serializers.py:12
+#, python-format
+msgid "Delete %(model)s"
+msgstr "Eliminar %(model)s"
+
+#: .\apps\accounts\permission_management\api\serializers.py:13
+#, python-format
+msgid "View %(model)s"
+msgstr "Ver %(model)s"
+
+#: .\apps\accounts\permission_management\api\serializers.py:17
+#: .\apps\vehicles\vehicle\domain\models.py:29
+msgid "Can search vehicle by patent"
+msgstr "Puede buscar vehículo por patente"
+
+#: .\apps\accounts\profile\api\serializers.py:35
+msgid "First name cannot exceed 100 characters."
+msgstr ""
+
+#: .\apps\accounts\profile\api\serializers.py:36
+msgid "First name cannot be blank."
+msgstr ""
+
+#: .\apps\accounts\profile\api\serializers.py:43
+msgid "Last name cannot exceed 100 characters."
+msgstr ""
+
+#: .\apps\accounts\profile\api\serializers.py:44
+msgid "Last name cannot be blank."
+msgstr ""
+
+#: .\apps\accounts\profile\api\serializers.py:51
+msgid "Second last name cannot exceed 100 characters."
+msgstr ""
+
+#: .\apps\accounts\profile\api\serializers.py:58
+msgid "RUT cannot exceed 12 characters."
+msgstr ""
+
+#: .\apps\accounts\profile\api\serializers.py:65
+msgid "Phone number cannot exceed 20 characters."
+msgstr ""
+
+#: .\apps\accounts\profile\api\serializers.py:71
+msgid "Enter a valid date in YYYY-MM-DD format."
+msgstr ""
+
+#: .\apps\accounts\profile\api\serializers.py:78
+msgid "Upload a valid image file."
+msgstr ""
+
+#: .\apps\accounts\profile\api\serializers.py:85
+msgid "Address cannot exceed 255 characters."
+msgstr ""
+
+#: .\apps\accounts\profile\domain\models.py:19
+#: .\apps\memberships\membership\domain\models.py:17
+msgid "user"
+msgstr ""
+
+#: .\apps\accounts\profile\domain\models.py:23
+msgid "first name"
+msgstr ""
+
+#: .\apps\accounts\profile\domain\models.py:24
+msgid "last name"
+msgstr ""
+
+#: .\apps\accounts\profile\domain\models.py:26
+msgid "second last name"
+msgstr ""
+
+#: .\apps\accounts\profile\domain\models.py:30
+msgid "RUT"
+msgstr ""
+
+#: .\apps\accounts\profile\domain\models.py:33
+msgid "phone number"
+msgstr ""
+
+#: .\apps\accounts\profile\domain\models.py:36
+msgid "birth date"
+msgstr ""
+
+#: .\apps\accounts\profile\domain\models.py:38
+msgid "avatar"
+msgstr ""
+
+#: .\apps\accounts\profile\domain\models.py:40
+msgid "address"
+msgstr ""
+
+#: .\apps\accounts\profile\domain\models.py:46
+msgid "Profile"
+msgstr ""
+
+#: .\apps\accounts\profile\domain\models.py:47
+msgid "Profiles"
+msgstr ""
+
+#: .\apps\accounts\user\api\serializers.py:40
+msgid "Email is required."
+msgstr ""
+
+#: .\apps\accounts\user\api\serializers.py:41
+#: .\apps\accounts\user\api\serializers.py:50
+msgid "This field cannot be blank."
+msgstr ""
+
+#: .\apps\accounts\user\api\serializers.py:42
+msgid "Please enter a valid email address."
+msgstr ""
+
+#: .\apps\accounts\user\api\serializers.py:49
+msgid "Password is required."
+msgstr ""
+
+#: .\apps\accounts\user\api\serializers.py:67
+msgid "Account not found with the given credentials."
+msgstr ""
+
+#: .\apps\accounts\user\api\serializers.py:72
+msgid "This account is deactivated. Please contact support."
+msgstr ""
+
+#: .\apps\accounts\user\api\views.py:162 .\apps\accounts\user\api\views.py:211
+msgid "Refresh token not found in cookies."
+msgstr ""
+
+#: .\apps\accounts\user\api\views.py:172
+msgid "Invalid or expired refresh token."
+msgstr ""
+
+#: .\apps\accounts\user\api\views.py:177
+msgid "Unexpected refresh error."
+msgstr ""
+
+#: .\apps\accounts\user\api\views.py:218
+msgid "Logged out successfully."
+msgstr ""
+
+#: .\apps\accounts\user\api\views.py:233
+msgid "Logged out successfully (token was invalid)."
+msgstr ""
+
+#: .\apps\accounts\user\api\views.py:240
+msgid "Unexpected logout error."
+msgstr ""
+
+#: .\apps\accounts\user\domain\managers.py:18
+msgid "El email es obligatorio."
+msgstr ""
+
+#: .\apps\accounts\user\domain\managers.py:42
+msgid "Superuser must have is_staff=True."
+msgstr ""
+
+#: .\apps\accounts\user\domain\managers.py:44
+msgid "Superuser must have is_superuser=True."
+msgstr ""
+
+#: .\apps\accounts\user\domain\models.py:14
+msgid "email address"
+msgstr ""
+
+#: .\apps\accounts\user\domain\models.py:25
+msgid "User"
+msgstr ""
+
+#: .\apps\accounts\user\domain\models.py:26
+msgid "Users"
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:121
+msgid "Structure too deep, cannot flatten errors"
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:175
+#, python-format
+msgid "This object is referenced by '%(object)s'."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:183
+msgid "Cannot delete object because other resources depend on it."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:202
+#: .\apps\common\api\custom_exception_handler_v2.py:265
+#: .\apps\common\api\custom_exception_handler_v2.py:282
+#, python-format
+msgid "A record with this %(field)s already exists."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:211
+#: .\apps\common\api\custom_exception_handler_v2.py:217
+#: .\apps\common\api\custom_exception_handler_v2.py:260
+#: .\apps\common\api\custom_exception_handler_v2.py:277
+msgid "Unique constraint violation."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:226
+msgid "Foreign key constraint violation."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:230
+msgid "Referenced object does not exist."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:243
+msgid "Required field missing."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:247
+msgid "This field is required."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:293
+msgid "Database integrity error."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:358
+#: .\apps\common\api\custom_exception_handler_v2.py:454
+#: .\apps\common\api\custom_exception_handler_v2.py:554
+#: .\apps\common\api\custom_exception_handler_v2.py:568
+msgid "Validation Error"
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:360
+#: .\apps\common\api\custom_exception_handler_v2.py:570
+msgid "The submitted data failed validation."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:373
+msgid "Bad Request"
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:386
+#: .\apps\common\api\custom_exception_handler_v2.py:479
+msgid "Not Found"
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:388
+msgid "The requested resource does not exist."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:397
+msgid "Malformed Request"
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:399
+msgid "Malformed JSON or request body."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:429
+msgid "Internal Server Error"
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:431
+msgid "An unexpected error occurred. Please try again later."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:456
+msgid "One or more items failed validation."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:481
+msgid "The requested resource was not found."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:493
+msgid "Unauthorized"
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:496
+msgid "Authentication credentials were not provided or are invalid."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:505
+msgid "Forbidden"
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:507
+msgid "You do not have permission to perform this action."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:516
+msgid "Method Not Allowed"
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:518
+#, python-format
+msgid "Method '%(method)s' not allowed."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:520
+msgid "Method not allowed."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:530
+#, python-format
+msgid "Request was throttled. Expected available in %(wait)s seconds."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:533
+msgid "Too many requests."
+msgstr ""
+
+#: .\apps\common\api\custom_exception_handler_v2.py:537
+msgid "Too Many Requests"
+msgstr ""
+
+#: .\apps\common\api\serializers.py:11
+msgid "Name of the field that produced the error"
+msgstr ""
+
+#: .\apps\common\api\serializers.py:13
+msgid "Corresponding error message"
+msgstr ""
+
+#: .\apps\common\api\serializers.py:24
+msgid "URL with information about the HTTP status code"
+msgstr ""
+
+#: .\apps\common\api\serializers.py:26
+msgid "HTTP status code"
+msgstr ""
+
+#: .\apps\common\api\serializers.py:28
+msgid "Summary title of the error"
+msgstr ""
+
+#: .\apps\common\api\serializers.py:33
+msgid ""
+"Machine-readable error code identifier (e.g. 'validation_error', 'not_found')"
+msgstr ""
+
+#: .\apps\common\api\serializers.py:37
+msgid "Detailed description of the error"
+msgstr ""
+
+#: .\apps\common\api\serializers.py:42
+msgid "Path or endpoint where the error occurred"
+msgstr ""
+
+#: .\apps\common\api\serializers.py:47
+msgid "List of validation errors per field"
+msgstr ""
+
+#: .\apps\common\api\serializers.py:57
+msgid "List of error messages"
+msgstr ""
+
+#: .\apps\memberships\choices.py:12
+msgid "Owner"
+msgstr ""
+
+#: .\apps\memberships\choices.py:13
+msgid "Administrator"
+msgstr ""
+
+#: .\apps\memberships\choices.py:14
+msgid "Seller"
+msgstr ""
+
+#: .\apps\memberships\choices.py:15
+msgid "Viewer"
+msgstr ""
+
+#: .\apps\memberships\membership\domain\models.py:23
+msgid "is active"
+msgstr ""
+
+#: .\apps\memberships\membership\domain\models.py:24
+msgid "Designates whether this membership is active."
+msgstr ""
+
+#: .\apps\memberships\membership\domain\models.py:30
+msgid "invited at"
+msgstr ""
+
+#: .\apps\memberships\membership\domain\models.py:31
+msgid "Date when the user was invited to the company"
+msgstr ""
+
+#: .\apps\memberships\membership\domain\models.py:36
+msgid "joined at"
+msgstr ""
+
+#: .\apps\memberships\membership\domain\models.py:37
+msgid "Date when the user joined the company"
+msgstr ""
+
+#: .\apps\memberships\membership\domain\models.py:41
+msgid "membership"
+msgstr ""
+
+#: .\apps\memberships\membership\domain\models.py:42
+msgid "memberships"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:12
+msgid "patent"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:16
+msgid "brand"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:17
+msgid "model"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:18
+msgid "year"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:19
+#: .\apps\vehicles\vehicle\domain\models.py:52
+msgid "created at"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:22
+#: .\apps\vehicles\vehicle\domain\models.py:41
+msgid "vehicle"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:23
+msgid "vehicles"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:48
+msgid "created by"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:50
+msgid "title"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:51
+msgid "detail"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:65
+#: .\apps\vehicles\vehicle\domain\models.py:88
+msgid "vehicle log"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:66
+msgid "vehicle logs"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:73
+msgid "Can change vehicle log status"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:81
+msgid "Photo"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:82
+msgid "Video"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:90
+msgid "file"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:92
+msgid "type"
+msgstr ""
+
+#: .\apps\vehicles\vehicle\domain\models.py:98
+#: .\apps\vehicles\vehicle\domain\models.py:99
+msgid "media"
+msgstr ""
+
+#: .\config\settings.py:509
+msgid "English"
+msgstr ""
+
+#: .\config\settings.py:510
+msgid "Spanish"
+msgstr ""
