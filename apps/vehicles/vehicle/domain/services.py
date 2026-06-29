@@ -27,10 +27,32 @@ User = get_user_model()
 
 
 class VehicleService:
-    """Handles all business logic related to Vehicle."""
+    """
+    ES: Proporciona la lógica de negocio y las operaciones necesarias para gestionar los vehículos de la flota.
+
+    Actúa como capa de servicio entre las vistas/serializadores y el modelo «Vehículo»,
+    encapsulando la validación, la normalización de datos y la gestión de excepciones.
+
+    EN: Provides business logic and operations for managing fleet vehicles.
+
+    Acts as the service layer between the views/serializers and the Vehicle model,
+    encapsulating validation, data normalization, and exception handling.
+
+    """
 
     @staticmethod
     def get_by_id(vehicle_id: int) -> Vehicle:
+        """Retrieves a single vehicle instance by its primary key.
+
+        Args:
+            vehicle_id (int): The unique identifier of the vehicle.
+
+        Returns:
+            Vehicle: The requested vehicle model instance.
+
+        Raises:
+            VehicleNotFound: If no vehicle matches the provided ID.
+        """
         try:
             return Vehicle.objects.get(pk=vehicle_id)
         except Vehicle.DoesNotExist:
@@ -38,10 +60,29 @@ class VehicleService:
 
     @staticmethod
     def list_all() -> list[Vehicle]:
+        """Retrieves all vehicle records from the database.
+
+        Returns:
+            list[Vehicle]: A list containing all vehicle instances.
+        """
         return list(Vehicle.objects.all())
 
     @staticmethod
     def create(*, patent: str, brand: str, model: str, year: int) -> Vehicle:
+        """Creates and sanitizes a new vehicle record in the system.
+
+        Args:
+            patent (str): The unique license plate or patent identifier.
+            brand (str): The name of the vehicle manufacturer.
+            model (str): The specific model or series name.
+            year (int): The manufacturing or model year.
+
+        Returns:
+            Vehicle: The newly created and saved vehicle instance.
+
+        Raises:
+            VehiclePatentAlreadyExists: If the patent is already registered.
+        """
         try:
             vehicle = Vehicle.objects.create(
                 patent=patent.upper().strip(),
@@ -63,6 +104,25 @@ class VehicleService:
         model: str | None = None,
         year: int | None = None,
     ) -> Vehicle:
+        """Updates specific fields of an existing vehicle.
+
+        Only updates the fields that are explicitly provided (not None). It performs
+        uniqueness checks if the patent is being changed.
+
+        Args:
+            vehicle_id (int): The unique identifier of the vehicle to update.
+            patent (str | None, optional): New license plate value. Defaults to None.
+            brand (str | None, optional): New manufacturer name. Defaults to None.
+            model (str | None, optional): New series/model name. Defaults to None.
+            year (int | None, optional): New manufacturing year. Defaults to None.
+
+        Returns:
+            Vehicle: The updated vehicle instance.
+
+        Raises:
+            VehicleNotFound: If the vehicle_id does not exist.
+            VehiclePatentAlreadyExists: If the new patent conflicts with another vehicle.
+        """
         vehicle = VehicleService.get_by_id(vehicle_id)
 
         if patent is not None:
@@ -86,11 +146,30 @@ class VehicleService:
 
     @staticmethod
     def delete(vehicle_id: int) -> None:
+        """Deletes a vehicle record from the database.
+
+        Args:
+            vehicle_id (int): The unique identifier of the vehicle to be removed.
+
+        Raises:
+            VehicleNotFound: If no vehicle matches the provided ID.
+        """
         vehicle = VehicleService.get_by_id(vehicle_id)
         vehicle.delete()
 
     @staticmethod
     def get_by_patent(patent: str) -> Vehicle:
+        """Finds a vehicle using a case-insensitive lookup on its patent.
+
+        Args:
+            patent (str): The license plate string to search for.
+
+        Returns:
+            Vehicle: The matching vehicle instance.
+
+        Raises:
+            VehiclePatentNotFound: If no vehicle matches the provided patent.
+        """
         try:
             return Vehicle.objects.get(patent__iexact=patent)
         except Vehicle.DoesNotExist:
@@ -98,10 +177,29 @@ class VehicleService:
 
 
 class VehicleLogService:
-    """Handles all business logic related to VehicleLog."""
+    """Provides business logic and atomicity for managing vehicle event logs.
+
+    Handles CRUD operations, query optimization (select_related), status updates,
+    and bulk media file attachments bound to specific vehicle events.
+    """
 
     @staticmethod
     def get_by_id(vehicle_id: int, log_id: int) -> VehicleLog:
+        """Retrieves a specific vehicle log entry verifying its relationship.
+
+        Optimizes database performance by fetching related 'vehicle' and
+        'created_by' tables in a single SQL JOIN query.
+
+        Args:
+            vehicle_id (int): The primary key of the associated vehicle.
+            log_id (int): The primary key of the log entry.
+
+        Returns:
+            VehicleLog: The requested vehicle log instance.
+
+        Raises:
+            VehicleLogNotFound: If no log entry matches the provided parameters.
+        """
         try:
             return VehicleLog.objects.select_related("vehicle", "created_by").get(
                 pk=log_id,
@@ -112,6 +210,19 @@ class VehicleLogService:
 
     @staticmethod
     def list_by_vehicle(vehicle_id: int) -> list[VehicleLog]:
+        """Retrieves all log records belonging to a particular vehicle.
+
+        Validates the vehicle's existence before running the filter query.
+
+        Args:
+            vehicle_id (int): The unique identifier of the target vehicle.
+
+        Returns:
+            list[VehicleLog]: A list of logs sorted by Meta configuration.
+
+        Raises:
+            VehicleNotFound: If the provided vehicle_id does not exist.
+        """
         VehicleService.get_by_id(vehicle_id)  # raises VehicleNotFound if missing
         return list(
             VehicleLog.objects.select_related("created_by").filter(
@@ -130,6 +241,23 @@ class VehicleLogService:
         created_by: User | None = None,
         files: list[UploadedFile] | None = None,
     ) -> VehicleLog:
+        """Creates a vehicle log and registers its media files atomically.
+
+        Args:
+            vehicle_id (int): The unique identifier of the vehicle.
+            title (str): Headline summary of the log entry.
+            detail (str): In-depth text description of the event.
+            type (VehicleLogType): Category choice for the event.
+            status (VehicleLogStatus): Initial operational status choice.
+            created_by (User | None, optional): User who recorded the log. Defaults to None.
+            files (list[UploadedFile] | None, optional): Raw physical files to upload. Defaults to None.
+
+        Returns:
+            VehicleLog: The fully generated log instance with its relations.
+
+        Raises:
+            VehicleNotFound: If the associated vehicle doesn't exist.
+        """
         vehicle = VehicleService.get_by_id(vehicle_id)
 
         with transaction.atomic():
@@ -156,6 +284,20 @@ class VehicleLogService:
         title: str | None = None,
         detail: str | None = None,
     ) -> VehicleLog:
+        """Updates basic textual descriptive attributes of a log record.
+
+        Args:
+            vehicle_id (int): The primary key of the associated vehicle.
+            log_id (int): The primary key of the log entry to update.
+            title (str | None, optional): New title summary string. Defaults to None.
+            detail (str | None, optional): New comprehensive detail string. Defaults to None.
+
+        Returns:
+            VehicleLog: The updated log model instance.
+
+        Raises:
+            VehicleLogNotFound: If the combination of log and vehicle does not exist.
+        """
         log = VehicleLogService.get_by_id(vehicle_id, log_id)
 
         if title is not None:
@@ -168,6 +310,15 @@ class VehicleLogService:
 
     @staticmethod
     def delete(vehicle_id: int, log_id: int) -> None:
+        """Deletes a log record from the database.
+
+        Args:
+            vehicle_id (int): The primary key of the associated vehicle.
+            log_id (int): The primary key of the log entry to delete.
+
+        Raises:
+            VehicleLogNotFound: If the log does not match the identifiers.
+        """
         log = VehicleLogService.get_by_id(vehicle_id, log_id)
         log.delete()
 
@@ -178,6 +329,21 @@ class VehicleLogService:
         *,
         status: VehicleLogStatus,
     ) -> VehicleLog:
+        """Changes the current workflow state of the log entry.
+
+        Optimizes the SQL database call by committing only the 'status' field.
+
+        Args:
+            vehicle_id (int): The primary key of the associated vehicle.
+            log_id (int): The primary key of the log entry.
+            status (VehicleLogStatus): The new state value to be applied.
+
+        Returns:
+            VehicleLog: The modified log model instance.
+
+        Raises:
+            VehicleLogNotFound: If the log entry is not found.
+        """
         log = VehicleLogService.get_by_id(vehicle_id, log_id)
         log.status = status
         log.save(update_fields=["status"])
@@ -185,7 +351,12 @@ class VehicleLogService:
 
 
 class MediaService:
-    """Handles all business logic related to Media files."""
+    """Handles business logic, validation, and storage operations for Media files.
+
+    Manages single and bulk file uploads, maps file extensions to operational
+    media types (photo/video), optimizes spatial queries, and handles physical
+    file removal from storage.
+    """
 
     _VALID_EXTENSIONS: dict[str, Media.MediaType] = {
         "jpg": Media.MediaType.PHOTO,
@@ -199,6 +370,19 @@ class MediaService:
 
     @staticmethod
     def get_by_id(media_id: int) -> Media:
+        """Retrieves a single media record by its ID.
+
+        Optimizes the database lookup by pre-fetching the related vehicle log entry.
+
+        Args:
+            media_id (int): The unique identifier of the media record.
+
+        Returns:
+            Media: The requested media model instance.
+
+        Raises:
+            MediaNotFound: If no media record matches the provided ID.
+        """
         try:
             return Media.objects.select_related("vehicle_log").get(pk=media_id)
         except Media.DoesNotExist:
@@ -206,11 +390,36 @@ class MediaService:
 
     @staticmethod
     def list_by_log(vehicle_id: int, log_id: int) -> list[Media]:
+        """Retrieves all media attachments belonging to a specific vehicle log entry.
+
+        Validates vehicle ownership and log existence prior to filtering.
+
+        Args:
+            vehicle_id (int): The primary key of the associated vehicle.
+            log_id (int): The primary key of the targeted vehicle log.
+
+        Returns:
+            list[Media]: A list containing all matching media model instances.
+
+        Raises:
+            VehicleLogNotFound: If the log does not exist or belong to the vehicle.
+        """
         VehicleLogService.get_by_id(vehicle_id, log_id)  # validates ownership
         return list(Media.objects.filter(vehicle_log_id=log_id))
 
     @staticmethod
     def _resolve_type(file: UploadedFile) -> Media.MediaType:
+        """Extracts and evaluates the file extension to match a valid Media format.
+
+        Args:
+            file (UploadedFile): The raw uploaded file object containing a name attribute.
+
+        Returns:
+            Media.MediaType: The resolved inner structural format choice (photo or video).
+
+        Raises:
+            InvalidMediaType: If the file extension is missing or not supported.
+        """
         extension = file.name.rsplit(".", 1)[-1].lower() if "." in file.name else ""
         media_type = MediaService._VALID_EXTENSIONS.get(extension)
         if media_type is None:
@@ -219,6 +428,19 @@ class MediaService:
 
     @staticmethod
     def create(log_id: int, *, file: UploadedFile) -> Media:
+        """Validates and persists a single media attachment in the system.
+
+        Args:
+            log_id (int): The unique database identifier of the target vehicle log.
+            file (UploadedFile): The raw file stream payload to upload.
+
+        Returns:
+            Media: The newly generated and saved media model entry.
+
+        Raises:
+            InvalidMediaType: If the file type verification fails.
+            MediaUploadFailed: If any underlying storage or database transaction fails.
+        """
         media_type = MediaService._resolve_type(file)
         try:
             return Media.objects.create(
@@ -231,6 +453,18 @@ class MediaService:
 
     @staticmethod
     def bulk_create(log_id: int, *, files: list[UploadedFile]) -> list[Media]:
+        """Atomically processes and uploads multiple media attachments.
+
+        If one file fails type validation or upload constraints, the entire batch
+        is rolled back to maintain structural consistency.
+
+        Args:
+            log_id (int): The unique database identifier of the target vehicle log.
+            files (list[UploadedFile]): A sequence containing raw upload file payloads.
+
+        Returns:
+            list[Media]: A list containing all newly created media model entries.
+        """
         created: list[Media] = []
         with transaction.atomic():
             for file in files:
@@ -239,6 +473,17 @@ class MediaService:
 
     @staticmethod
     def delete(media_id: int) -> None:
+        """Removes a media record from the database and deletes its physical file asset.
+
+        Ensures that storage allocation is freed by purging the actual file from the
+        configured storage engine (S3, local disk, etc.) alongside the DB record row.
+
+        Args:
+            media_id (int): The unique identifier of the target media file.
+
+        Raises:
+            MediaNotFound: If the media_id does not map to any record.
+        """
         media = MediaService.get_by_id(media_id)
         media.file.delete(save=False)  # removes the physical file from storage
         media.delete()
@@ -250,7 +495,11 @@ RECENT_LOGS_LIMIT = 10
 
 
 class DashboardService:
-    """Builds aggregated statistics for the admin dashboard."""
+    """Builds aggregated statistics and metrics for the administration dashboard.
+
+    Processes analytical data across vehicles, logs, user profiles, and media
+    attachments, supporting optional date range filtering for trend analysis.
+    """
 
     @staticmethod
     def get_dashboard_data(
@@ -258,6 +507,17 @@ class DashboardService:
         date_from: date | None = None,
         date_to: date | None = None,
     ) -> dict:
+        """Assembles the complete dashboard payload containing summaries, rankings, and trends.
+
+        Args:
+            date_from (date | None, optional): Start date boundary for analytical metrics. Defaults to None.
+            date_to (date | None, optional): End date boundary for analytical metrics. Defaults to None.
+
+        Returns:
+            dict: Structured nested data containing summary, logs_by_status, logs_by_type,
+                  logs_by_type_and_status, top_vehicles_by_logs, top_users_by_logs,
+                  recent_logs, and media_summary.
+        """
         logs_qs = DashboardService._get_logs_queryset(date_from, date_to)
 
         return {
@@ -277,6 +537,15 @@ class DashboardService:
 
     @staticmethod
     def _get_logs_queryset(date_from: date | None, date_to: date | None):
+        """Generates a base vehicle log QuerySet filtered by an optional date range.
+
+        Args:
+            date_from (date | None): Lower bound constraint for the log creation date.
+            date_to (date | None): Upper bound constraint for the log creation date.
+
+        Returns:
+            QuerySet: Evaluated or lazy vehicle log query with applied date filters.
+        """
         qs = VehicleLog.objects.all()
         if date_from is not None:
             qs = qs.filter(created_at__date__gte=date_from)
@@ -288,6 +557,18 @@ class DashboardService:
 
     @staticmethod
     def _get_summary(logs_qs) -> dict:
+        """Calculates global totals, current real-time progress counters, and critical bottlenecks.
+
+        Real-time counters (today, this week, this month) evaluate the total historical records
+        and ignore the dashboard's filtering date boundaries to preserve operational awareness.
+
+        Args:
+            logs_qs (QuerySet): Base query containing logs within the filtered date range.
+
+        Returns:
+            dict: High-level KPI values including total vehicles, filtered logs, status-specific counts,
+                  and calendar milestones.
+        """
         today = timezone.now().date()
         week_start = today - timedelta(days=today.weekday())
         month_start = today.replace(day=1)
@@ -316,6 +597,16 @@ class DashboardService:
 
     @staticmethod
     def _get_logs_by_status(logs_qs) -> list[dict]:
+        """Groups and counts the log distribution across all defined workflow statuses.
+
+        Ensures that statuses with zero matching records are explicitly included with a count of 0.
+
+        Args:
+            logs_qs (QuerySet): Filtered log data source.
+
+        Returns:
+            list[dict]: List of items mapping the status choice value, its localized label, and frequency count.
+        """
         counts = dict(
             logs_qs.values_list("status")
             .annotate(count=Count("id"))
@@ -328,6 +619,16 @@ class DashboardService:
 
     @staticmethod
     def _get_logs_by_type(logs_qs) -> list[dict]:
+        """Groups and counts the log distribution across all defined event categories.
+
+        Ensures that category types with zero records are included with a count of 0.
+
+        Args:
+            logs_qs (QuerySet): Filtered log data source.
+
+        Returns:
+            list[dict]: List of items mapping the type choice value, its localized label, and frequency count.
+        """
         counts = dict(
             logs_qs.values_list("type")
             .annotate(count=Count("id"))
@@ -340,6 +641,14 @@ class DashboardService:
 
     @staticmethod
     def _get_logs_by_type_and_status(logs_qs) -> list[dict]:
+        """Performs cross-tabulation metrics to map statuses inside each log category type.
+
+        Args:
+            logs_qs (QuerySet): Filtered log data source.
+
+        Returns:
+            list[dict]: List structured by event type, enclosing a nested dictionary matrix of status counters.
+        """
         raw = logs_qs.values("type", "status").annotate(count=Count("id"))
 
         lookup: dict[str, dict[str, int]] = {}
@@ -362,6 +671,14 @@ class DashboardService:
 
     @staticmethod
     def _get_top_vehicles(logs_qs) -> list[dict]:
+        """Ranks the most active vehicles based on the volume of generated log events.
+
+        Args:
+            logs_qs (QuerySet): Filtered log data source.
+
+        Returns:
+            list[dict]: Serialized representation of high-frequency vehicles, limited by TOP_VEHICLES_LIMIT.
+        """
         top = (
             logs_qs.values(
                 "vehicle_id", "vehicle__patent", "vehicle__brand", "vehicle__model"
@@ -398,6 +715,17 @@ class DashboardService:
     #     ]
     @staticmethod
     def _get_top_users(logs_qs) -> list[dict]:
+        """Ranks user accounts by the total number of log entries they have submitted.
+
+        Uses database functions (Concat, Coalesce) to compute and sanitize full name fields
+        directly within the SQL engine execution context.
+
+        Args:
+            logs_qs (QuerySet): Filtered log data source.
+
+        Returns:
+            list[dict]: Serialized user profile summary data, limited by TOP_USERS_LIMIT.
+        """
         top = (
             logs_qs.exclude(created_by__isnull=True)
             .values("created_by_id")
@@ -429,6 +757,17 @@ class DashboardService:
 
     @staticmethod
     def _get_recent_logs(logs_qs) -> list[dict]:
+        """Fetches chronological audit trail items for real-time tracking feeds.
+
+        Optimizes database throughput by triggering database JOIN execution via select_related
+        and aggregates media attachment metrics per item.
+
+        Args:
+            logs_qs (QuerySet): Filtered log data source.
+
+        Returns:
+            list[dict]: Chronological slice of log rows, limited by RECENT_LOGS_LIMIT.
+        """
         logs = (
             logs_qs.select_related("vehicle", "created_by")
             .annotate(media_count=Count("media_files"))
@@ -456,6 +795,18 @@ class DashboardService:
 
     @staticmethod
     def _get_media_summary(logs_qs) -> dict:
+        """Aggregates metrics related to uploaded files attached to the active log subset.
+
+        Calculates distribution totals by core media extensions and isolates log entries
+        lacking verification attachments.
+
+        Args:
+            logs_qs (QuerySet): Filtered log data source.
+
+        Returns:
+            dict: Media metric indicators including total_media, photo/video subsets,
+                  and logs_without_media counts.
+        """
         media_qs = Media.objects.filter(vehicle_log__in=logs_qs)
         logs_without_media = logs_qs.filter(media_files__isnull=True).distinct().count()
 
